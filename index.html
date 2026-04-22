@@ -9,7 +9,6 @@
   <meta name="apple-mobile-web-app-title" content="Mes Dépenses" />
   <title>Mes Dépenses — FCFA</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -61,22 +60,14 @@
       </div>
 
       <div class="card">
-        <div class="card-header">
-          <h2>Par catégorie</h2>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="categoryChart"></canvas>
-        </div>
+        <div class="card-header"><h2>Par catégorie</h2></div>
+        <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
         <div id="categoryLegend" class="legend"></div>
       </div>
 
       <div class="card">
-        <div class="card-header">
-          <h2>Évolution (6 derniers mois)</h2>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="trendChart"></canvas>
-        </div>
+        <div class="card-header"><h2>Évolution (6 derniers mois)</h2></div>
+        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
       </div>
 
       <div class="card">
@@ -116,9 +107,7 @@
       </div>
       <div class="card">
         <div class="card-header"><h2>Comparaison mensuelle</h2></div>
-        <div class="chart-wrap">
-          <canvas id="compareChart"></canvas>
-        </div>
+        <div class="chart-wrap"><canvas id="compareChart"></canvas></div>
       </div>
       <div class="card">
         <div class="card-header"><h2>Total annuel</h2></div>
@@ -129,6 +118,7 @@
 
     <!-- SETTINGS -->
     <section class="view" id="view-settings">
+
       <div class="card">
         <div class="card-header"><h2>Budget mensuel (FCFA)</h2></div>
         <input type="number" id="budgetInput" inputmode="numeric" min="0" step="1000" placeholder="Ex : 150000" />
@@ -152,15 +142,62 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header"><h2>Synchronisation multi-appareils</h2></div>
-        <p class="muted small">Sauvegarde tes données dans iCloud Drive (ou Google Drive/Dropbox) pour les retrouver sur un autre iPhone. À la restauration, tu pourras fusionner ou remplacer.</p>
-        <button class="primary-btn" id="cloudSave">📤 Sauvegarder dans le cloud</button>
-        <label class="secondary-btn file-label">
-          📥 Restaurer depuis le cloud
-          <input type="file" id="cloudRestore" accept="application/json" hidden />
-        </label>
-        <p class="muted small" id="lastSyncText">Dernière sauvegarde : jamais</p>
+      <!-- SYNC CARD V2 -->
+      <div class="card sync-card">
+        <div class="card-header">
+          <h2>🔄 Synchronisation</h2>
+          <span class="sync-platform-badge" id="syncPlatformBadge">—</span>
+        </div>
+
+        <div class="sync-status-bar">
+          <span class="sync-dot" id="syncDot"></span>
+          <span class="sync-status-text" id="syncStatusText">Chargement…</span>
+        </div>
+
+        <div class="sync-device-row">
+          <label class="sync-label">📱 Nom de cet appareil</label>
+          <div class="sync-device-edit">
+            <input type="text" id="deviceNameInput" placeholder="Ex : iPhone de Marie" maxlength="30" />
+            <button class="sync-save-btn" id="saveDeviceName">✓</button>
+          </div>
+        </div>
+
+        <div class="sync-family-row">
+          <label class="sync-label">👨‍👩‍👧 Code famille <span class="sync-hint">(optionnel)</span></label>
+          <div class="sync-device-edit">
+            <input type="text" id="familyKeyInput" placeholder="Ex : ABCD-1234" maxlength="9" style="text-transform:uppercase;letter-spacing:2px" />
+            <button class="sync-save-btn" id="saveFamilyKey">✓</button>
+            <button class="sync-gen-btn" id="genFamilyKey" title="Générer un code">🎲</button>
+          </div>
+          <p class="muted small" style="margin-top:6px">Même code = fusion facile entre membres de la famille.</p>
+        </div>
+
+        <div class="sync-actions">
+          <button class="sync-btn-save" id="cloudSave">
+            <span class="sync-btn-icon">📤</span>
+            <span class="sync-btn-text">
+              <strong>Sauvegarder</strong>
+              <small id="syncSaveHint">vers le cloud</small>
+            </span>
+          </button>
+          <label class="sync-btn-restore">
+            <span class="sync-btn-icon">📥</span>
+            <span class="sync-btn-text">
+              <strong>Restaurer</strong>
+              <small>depuis le cloud</small>
+            </span>
+            <input type="file" id="cloudRestore" accept="application/json" hidden />
+          </label>
+        </div>
+
+        <button class="sync-guide-toggle" id="syncGuideToggle">
+          ℹ️ Comment sync sur <span id="syncPlatformName">cet appareil</span> ?
+        </button>
+        <div class="sync-guide" id="syncGuide" hidden>
+          <ol id="syncGuideSteps"></ol>
+        </div>
+
+        <p class="sync-last-time" id="lastSyncText">Jamais synchronisé</p>
       </div>
 
       <div class="card">
@@ -176,9 +213,10 @@
 
       <div class="card">
         <div class="card-header"><h2>À propos</h2></div>
-        <p class="muted small">Mes Dépenses — PWA locale. Toutes tes données restent sur ton iPhone.</p>
-        <p class="muted small">Version 1.0 · Devise : FCFA</p>
+        <p class="muted small">Mes Dépenses — PWA locale. Toutes tes données restent sur ton appareil.</p>
+        <p class="muted small">Version 2.0 · Devise : FCFA</p>
       </div>
+
     </section>
 
   </main>
@@ -202,39 +240,31 @@
     </button>
   </nav>
 
-  <!-- ========== MODAL: ADD/EDIT TRANSACTION ========== -->
+  <!-- MODAL: ADD/EDIT TRANSACTION -->
   <div class="modal" id="txModal" hidden>
     <div class="modal-sheet">
       <div class="modal-header">
         <h2 id="txModalTitle">Nouvelle dépense</h2>
         <button class="icon-btn" id="closeTxModal" aria-label="Fermer">✕</button>
       </div>
-
       <div class="type-toggle">
         <button class="type-btn active" data-type="expense">− Dépense</button>
         <button class="type-btn" data-type="income">+ Revenu</button>
       </div>
-
       <form id="txForm" autocomplete="off">
         <input type="hidden" id="txId" />
-
         <label>Montant (FCFA)</label>
         <input type="number" id="txAmount" inputmode="numeric" min="0" step="1" required placeholder="0" />
-
         <label>Catégorie</label>
         <select id="txCategory" required></select>
-
         <label>Date</label>
         <input type="date" id="txDate" required />
-
         <label>Description (optionnel)</label>
         <input type="text" id="txDescription" placeholder="Ex : Marché de Treichville" maxlength="100" />
-
         <label class="check-row">
           <input type="checkbox" id="txRecurring" />
           <span>Transaction récurrente chaque mois</span>
         </label>
-
         <div class="modal-actions">
           <button type="button" class="danger-btn" id="deleteTx" hidden>Supprimer</button>
           <button type="submit" class="primary-btn">Enregistrer</button>
@@ -243,7 +273,7 @@
     </div>
   </div>
 
-  <!-- ========== MODAL: ADD/EDIT CATEGORY ========== -->
+  <!-- MODAL: ADD/EDIT CATEGORY -->
   <div class="modal" id="catModal" hidden>
     <div class="modal-sheet">
       <div class="modal-header">
@@ -252,23 +282,18 @@
       </div>
       <form id="catForm">
         <input type="hidden" id="catId" />
-
         <label>Nom</label>
         <input type="text" id="catName" required maxlength="30" placeholder="Ex : Restaurant" />
-
         <label>Emoji / icône</label>
         <input type="text" id="catIcon" maxlength="4" placeholder="🍽️" />
-
         <label>Couleur</label>
         <input type="color" id="catColor" value="#3b82f6" />
-
         <label>Type</label>
         <select id="catType">
           <option value="expense">Dépense</option>
           <option value="income">Revenu</option>
           <option value="both">Les deux</option>
         </select>
-
         <div class="modal-actions">
           <button type="button" class="danger-btn" id="deleteCat" hidden>Supprimer</button>
           <button type="submit" class="primary-btn">Enregistrer</button>
@@ -277,11 +302,23 @@
     </div>
   </div>
 
-  <!-- ========== TOAST ========== -->
+  <!-- MODAL: SYNC -->
+  <div class="modal" id="syncModal" hidden>
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2>🔄 Synchronisation</h2>
+        <button class="icon-btn" id="closeSyncModal">✕</button>
+      </div>
+      <div id="syncModalContent"></div>
+      <div id="syncModalActions"></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
   <div id="toast" class="toast" hidden></div>
 
-  <!-- Chart.js (local-first with CDN fallback-friendly caching via service worker) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="sync.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

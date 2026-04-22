@@ -346,3 +346,97 @@ form label {
   from { opacity: 0; transform: translate(-50%, 20px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
+
+/* ============ SYNC V2 ============ */
+.sync-card { border: 1px solid var(--border); }
+.sync-platform-badge {
+  font-size: 11px; font-weight: 600;
+  background: var(--primary); color: white;
+  padding: 3px 10px; border-radius: 999px;
+}
+.sync-status-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-soft); border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 14px;
+}
+.sync-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--text-muted); flex-shrink: 0;
+  transition: background 0.3s;
+}
+.sync-dot.ok   { background: var(--income); box-shadow: 0 0 0 3px rgba(16,185,129,.2); }
+.sync-dot.warn { background: var(--warning); box-shadow: 0 0 0 3px rgba(245,158,11,.2); }
+.sync-status-text { font-size: 13px; color: var(--text-muted); }
+.sync-label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.4px; margin-bottom: 6px;
+}
+.sync-hint { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.sync-device-row, .sync-family-row { margin-bottom: 14px; }
+.sync-device-edit { display: flex; gap: 6px; }
+.sync-device-edit input { flex: 1; padding: 10px 12px; font-size: 14px; }
+.sync-save-btn {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--income); color: white;
+  font-size: 16px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; border: none; cursor: pointer;
+}
+.sync-gen-btn {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--bg-soft); color: var(--text);
+  border: 1px solid var(--border); font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer;
+}
+.sync-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.sync-btn-save, .sync-btn-restore {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 12px; border-radius: 12px;
+  cursor: pointer; border: none; font-family: inherit;
+  transition: transform 0.08s;
+}
+.sync-btn-save { background: var(--primary); color: white; }
+.sync-btn-restore { background: var(--bg-soft); color: var(--text); border: 1px solid var(--border); }
+.sync-btn-save:active, .sync-btn-restore:active { transform: scale(0.97); }
+.sync-btn-icon { font-size: 22px; flex-shrink: 0; }
+.sync-btn-text { display: flex; flex-direction: column; gap: 1px; text-align: left; }
+.sync-btn-text strong { font-size: 14px; font-weight: 600; }
+.sync-btn-text small { font-size: 11px; opacity: 0.75; }
+.sync-guide-toggle {
+  width: 100%; text-align: left; padding: 10px 0;
+  font-size: 13px; color: var(--primary); font-weight: 500;
+  border-top: 1px solid var(--border); background: none;
+  cursor: pointer; font-family: inherit;
+}
+.sync-guide { background: var(--bg-soft); border-radius: 10px; padding: 14px 16px; margin-top: 8px; }
+.sync-guide ol { margin: 0; padding-left: 20px; }
+.sync-guide ol li { font-size: 13px; color: var(--text-muted); padding: 3px 0; line-height: 1.5; }
+.sync-last-time {
+  font-size: 12px; color: var(--text-muted); text-align: center;
+  padding-top: 10px; border-top: 1px solid var(--border); margin-top: 4px;
+}
+.sync-modal-info { background: var(--bg-soft); border-radius: 12px; padding: 14px 16px; margin: 12px 0; }
+.sync-modal-row {
+  display: flex; justify-content: space-between;
+  font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--border);
+}
+.sync-modal-row:last-child { border-bottom: none; }
+.sync-modal-row span:first-child { color: var(--text-muted); }
+.sync-modal-row span:last-child { font-weight: 600; }
+.sync-family-match { font-size: 13px; color: var(--income); font-weight: 600; margin-top: 8px; }
+.sync-merge-btn {
+  background: var(--income); color: white; padding: 13px; border-radius: 10px;
+  font-size: 15px; font-weight: 600; border: none; cursor: pointer;
+  width: 100%; font-family: inherit; margin-bottom: 8px;
+}
+.sync-replace-btn {
+  background: var(--bg-soft); color: var(--text); padding: 13px; border-radius: 10px;
+  font-size: 14px; font-weight: 500; border: 1px solid var(--border);
+  cursor: pointer; width: 100%; font-family: inherit; margin-bottom: 8px;
+}
+.sync-cancel-btn {
+  color: var(--text-muted); font-size: 14px; padding: 8px;
+  cursor: pointer; width: 100%; font-family: inherit; background: none; border: none;
+}

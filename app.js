@@ -1,11 +1,9 @@
 /* =========================================================
-   Mes Dépenses — PWA (FCFA)
-   Personal expense tracker, all data in localStorage.
+   Mes Dépenses — PWA (FCFA) v2
    ========================================================= */
 
 'use strict';
 
-// ---------- Storage ----------
 const STORAGE_KEY = 'mes_depenses_v1';
 
 const defaultCategories = [
@@ -68,12 +66,11 @@ const fmtMoneyShort = (n) => {
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const ymKey = (d) => {
   const dt = (d instanceof Date) ? d : new Date(d);
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+  return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0');
 };
 const prettyMonth = (ym) => {
   const [y, m] = ym.split('-').map(Number);
-  const dt = new Date(y, m - 1, 1);
-  return dt.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  return new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 };
 const prettyDate = (iso) => new Date(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 
@@ -96,8 +93,7 @@ function applyRecurring() {
 
   const existingByMonth = new Map();
   state.transactions.forEach(t => {
-    const key = ymKey(t.date) + '|' + (t.recurringParentId || '');
-    if (t.recurringParentId) existingByMonth.set(key, true);
+    if (t.recurringParentId) existingByMonth.set(ymKey(t.date) + '|' + t.recurringParentId, true);
   });
 
   const parents = state.transactions.filter(t => t.recurring);
@@ -110,19 +106,12 @@ function applyRecurring() {
       const targetDay = Math.min(startDate.getDate(), new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate());
       const targetDate = new Date(cursor.getFullYear(), cursor.getMonth(), targetDay);
       const targetISO = targetDate.toISOString().slice(0, 10);
-      const ym = ymKey(targetISO);
-      const key = ym + '|' + p.id;
-
+      const key = ymKey(targetISO) + '|' + p.id;
       if (!existingByMonth.has(key)) {
         state.transactions.push({
-          id: uid(),
-          type: p.type,
-          amount: p.amount,
-          date: targetISO,
-          categoryId: p.categoryId,
-          description: p.description,
-          recurring: false,
-          recurringParentId: p.id,
+          id: uid(), type: p.type, amount: p.amount, date: targetISO,
+          categoryId: p.categoryId, description: p.description,
+          recurring: false, recurringParentId: p.id,
         });
         existingByMonth.set(key, true);
       }
@@ -154,11 +143,9 @@ function navigate(view) {
   if (view === 'settings') renderSettings();
 }
 
-// ---------- Month navigation ----------
 function changeMonth(delta) {
   const [y, m] = currentMonth.split('-').map(Number);
-  const d = new Date(y, m - 1 + delta, 1);
-  currentMonth = ymKey(d);
+  currentMonth = ymKey(new Date(y, m - 1 + delta, 1));
   updateHeader();
   const active = document.querySelector('.view.active')?.id;
   if (active === 'view-dashboard') renderDashboard();
@@ -174,9 +161,7 @@ function updateHeader() {
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // ---------- Data helpers ----------
-function txOfMonth(ym) {
-  return state.transactions.filter(t => ymKey(t.date) === ym);
-}
+function txOfMonth(ym) { return state.transactions.filter(t => ymKey(t.date) === ym); }
 function getCategory(id) {
   return state.categories.find(c => c.id === id) || { name: 'Inconnu', icon: '❔', color: '#64748b', type: 'expense' };
 }
@@ -195,16 +180,12 @@ function renderDashboard() {
   $('#sumBalance').textContent = fmtMoney(balance);
 
   const budget = state.settings.monthlyBudget || 0;
-  const remaining = Math.max(0, budget - expense);
-  $('#sumBudget').textContent = budget ? fmtMoney(remaining) : '—';
-
+  $('#sumBudget').textContent = budget ? fmtMoney(Math.max(0, budget - expense)) : '—';
   const pct = budget ? Math.min(100, (expense / budget) * 100) : 0;
   $('#budgetProgress').style.width = pct + '%';
   $('#budgetPercent').textContent = budget ? pct.toFixed(0) + '%' : '—';
   $('#budgetText').textContent = budget
-    ? (expense > budget
-        ? `⚠️ Dépassement de ${fmtMoney(expense - budget)}`
-        : `${fmtMoney(expense)} dépensés sur ${fmtMoney(budget)}`)
+    ? (expense > budget ? '⚠️ Dépassement de ' + fmtMoney(expense - budget) : fmtMoney(expense) + ' dépensés sur ' + fmtMoney(budget))
     : 'Définis ton budget dans les Paramètres';
 
   renderCategoryChart(txs);
@@ -216,64 +197,42 @@ function renderCategoryChart(txs) {
   const expenses = txs.filter(t => t.type === 'expense');
   const byCat = new Map();
   expenses.forEach(t => byCat.set(t.categoryId, (byCat.get(t.categoryId) || 0) + t.amount));
-
-  const entries = [...byCat.entries()]
-    .map(([id, sum]) => ({ cat: getCategory(id), sum }))
-    .sort((a, b) => b.sum - a.sum);
-
+  const entries = [...byCat.entries()].map(([id, sum]) => ({ cat: getCategory(id), sum })).sort((a, b) => b.sum - a.sum);
   const ctx = $('#categoryChart').getContext('2d');
   if (charts.category) charts.category.destroy();
-
   if (!entries.length) {
     charts.category = null;
     $('#categoryLegend').innerHTML = '<p class="muted small">Aucune dépense ce mois.</p>';
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     return;
   }
-
   charts.category = new Chart(ctx, {
     type: 'doughnut',
     data: {
       labels: entries.map(e => e.cat.name),
-      datasets: [{
-        data: entries.map(e => e.sum),
-        backgroundColor: entries.map(e => e.cat.color),
-        borderWidth: 0,
-      }],
+      datasets: [{ data: entries.map(e => e.sum), backgroundColor: entries.map(e => e.cat.color), borderWidth: 0 }],
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: '65%',
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${fmtMoney(ctx.parsed)}` } },
+        tooltip: { callbacks: { label: (ctx) => ctx.label + ': ' + fmtMoney(ctx.parsed) } },
       },
     },
   });
-
-  $('#categoryLegend').innerHTML = entries.map(e => `
-    <span class="legend-item">
-      <span class="legend-swatch" style="background:${e.cat.color}"></span>
-      ${e.cat.icon} ${e.cat.name} · ${fmtMoney(e.sum)}
-    </span>
-  `).join('');
+  $('#categoryLegend').innerHTML = entries.map(e =>
+    '<span class="legend-item"><span class="legend-swatch" style="background:' + e.cat.color + '"></span>' +
+    e.cat.icon + ' ' + e.cat.name + ' · ' + fmtMoney(e.sum) + '</span>'
+  ).join('');
 }
 
 function renderTrendChart() {
-  const months = [];
   const [y, m] = currentMonth.split('-').map(Number);
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(y, m - 1 - i, 1);
-    months.push(ymKey(d));
-  }
-  const data = months.map(ym => {
-    const t = totals(txOfMonth(ym));
-    return { ym, expense: t.expense, income: t.income };
-  });
-
+  const months = [];
+  for (let i = 5; i >= 0; i--) months.push(ymKey(new Date(y, m - 1 - i, 1)));
+  const data = months.map(ym => { const t = totals(txOfMonth(ym)); return { ym, expense: t.expense, income: t.income }; });
   const ctx = $('#trendChart').getContext('2d');
   if (charts.trend) charts.trend.destroy();
-
   charts.trend = new Chart(ctx, {
     type: 'line',
     data: {
@@ -287,7 +246,7 @@ function renderTrendChart() {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
-        tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${fmtMoney(c.parsed.y)}` } },
+        tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + fmtMoney(c.parsed.y) } },
       },
       scales: {
         y: { ticks: { callback: (v) => fmtMoneyShort(v), font: { size: 10 } } },
@@ -300,26 +259,21 @@ function renderTrendChart() {
 function renderRecent(txs) {
   const sorted = [...txs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   $('#recentTx').innerHTML = sorted.length ? sorted.map(txRowHTML).join('') : '<li class="muted small" style="padding:10px 0">Aucune transaction.</li>';
-  $('#recentTx').querySelectorAll('[data-tx-id]').forEach(el => {
-    el.addEventListener('click', () => openTxModal(el.dataset.txId));
-  });
+  $('#recentTx').querySelectorAll('[data-tx-id]').forEach(el => el.addEventListener('click', () => openTxModal(el.dataset.txId)));
 }
 
 function txRowHTML(t) {
   const c = getCategory(t.categoryId);
   const sign = t.type === 'expense' ? '−' : '+';
-  const cls = t.type;
   const desc = t.description || c.name;
-  return `
-    <li class="tx-item" data-tx-id="${t.id}">
-      <div class="tx-icon" style="background:${c.color}22;color:${c.color}">${c.icon}</div>
-      <div class="tx-body">
-        <div class="tx-title">${escapeHtml(desc)}${t.recurringParentId ? ' 🔁' : (t.recurring ? ' 🔁' : '')}</div>
-        <div class="tx-sub">${c.name} · ${prettyDate(t.date)}</div>
-      </div>
-      <div class="tx-amount ${cls}">${sign} ${fmtMoney(t.amount)}</div>
-    </li>
-  `;
+  return '<li class="tx-item" data-tx-id="' + t.id + '">' +
+    '<div class="tx-icon" style="background:' + c.color + '22;color:' + c.color + '">' + c.icon + '</div>' +
+    '<div class="tx-body">' +
+      '<div class="tx-title">' + escapeHtml(desc) + (t.recurringParentId || t.recurring ? ' 🔁' : '') + '</div>' +
+      '<div class="tx-sub">' + c.name + ' · ' + prettyDate(t.date) + '</div>' +
+    '</div>' +
+    '<div class="tx-amount ' + t.type + '">' + sign + ' ' + fmtMoney(t.amount) + '</div>' +
+    '</li>';
 }
 
 function escapeHtml(s) {
@@ -332,24 +286,20 @@ function renderTransactions() {
   const filterCat = $('#filterCategory').value;
   const filterType = $('#filterType').value;
 
-  // Populate category filter once per render
   if (!$('#filterCategory').dataset.ready) {
     $('#filterCategory').innerHTML = '<option value="">Toutes catégories</option>' +
-      state.categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+      state.categories.map(c => '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>').join('');
     $('#filterCategory').dataset.ready = '1';
   }
 
   let txs = txOfMonth(currentMonth);
   if (filterType) txs = txs.filter(t => t.type === filterType);
   if (filterCat) txs = txs.filter(t => t.categoryId === filterCat);
-  if (search) {
-    txs = txs.filter(t => {
-      const c = getCategory(t.categoryId);
-      return (t.description || '').toLowerCase().includes(search) || c.name.toLowerCase().includes(search);
-    });
-  }
+  if (search) txs = txs.filter(t => {
+    const c = getCategory(t.categoryId);
+    return (t.description || '').toLowerCase().includes(search) || c.name.toLowerCase().includes(search);
+  });
 
-  // Group by date
   const groups = new Map();
   txs.sort((a, b) => b.date.localeCompare(a.date)).forEach(t => {
     if (!groups.has(t.date)) groups.set(t.date, []);
@@ -365,19 +315,11 @@ function renderTransactions() {
     container.innerHTML = [...groups.entries()].map(([date, items]) => {
       const { expense, income } = totals(items);
       const net = income - expense;
-      return `
-        <div class="tx-group">
-          <div class="tx-group-header">
-            <span>${capitalize(prettyDate(date))}</span>
-            <span>${net >= 0 ? '+' : ''}${fmtMoney(net)}</span>
-          </div>
-          <ul class="tx-list">${items.map(txRowHTML).join('')}</ul>
-        </div>
-      `;
+      return '<div class="tx-group">' +
+        '<div class="tx-group-header"><span>' + capitalize(prettyDate(date)) + '</span><span>' + (net >= 0 ? '+' : '') + fmtMoney(net) + '</span></div>' +
+        '<ul class="tx-list">' + items.map(txRowHTML).join('') + '</ul></div>';
     }).join('');
-    container.querySelectorAll('[data-tx-id]').forEach(el => {
-      el.addEventListener('click', () => openTxModal(el.dataset.txId));
-    });
+    container.querySelectorAll('[data-tx-id]').forEach(el => el.addEventListener('click', () => openTxModal(el.dataset.txId)));
   }
 }
 
@@ -385,41 +327,31 @@ function renderTransactions() {
 function renderStats() {
   const txs = txOfMonth(currentMonth);
   const expenses = txs.filter(t => t.type === 'expense');
-
-  // Top categories
   const byCat = new Map();
   expenses.forEach(t => byCat.set(t.categoryId, (byCat.get(t.categoryId) || 0) + t.amount));
   const sorted = [...byCat.entries()].map(([id, sum]) => ({ cat: getCategory(id), sum })).sort((a, b) => b.sum - a.sum);
   const maxSum = sorted[0]?.sum || 1;
 
   $('#topCategories').innerHTML = sorted.length
-    ? sorted.map(e => `
-      <li>
-        <span style="min-width:90px">${e.cat.icon} ${e.cat.name}</span>
-        <span class="rank-bar"><span class="rank-bar-fill" style="width:${(e.sum/maxSum*100).toFixed(0)}%; background:${e.cat.color}"></span></span>
-        <span style="font-weight:600">${fmtMoney(e.sum)}</span>
-      </li>`).join('')
+    ? sorted.map(e =>
+        '<li><span style="min-width:90px">' + e.cat.icon + ' ' + e.cat.name + '</span>' +
+        '<span class="rank-bar"><span class="rank-bar-fill" style="width:' + (e.sum/maxSum*100).toFixed(0) + '%; background:' + e.cat.color + '"></span></span>' +
+        '<span style="font-weight:600">' + fmtMoney(e.sum) + '</span></li>'
+      ).join('')
     : '<li class="muted small">Aucune donnée ce mois.</li>';
 
-  // Daily average
   const [y, m] = currentMonth.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
   const now = new Date();
-  const isCurrent = ymKey(now) === currentMonth;
-  const daysElapsed = isCurrent ? now.getDate() : daysInMonth;
+  const daysElapsed = ymKey(now) === currentMonth ? now.getDate() : daysInMonth;
   const totalExp = expenses.reduce((s, t) => s + t.amount, 0);
   const avg = daysElapsed ? totalExp / daysElapsed : 0;
   $('#dailyAverage').textContent = fmtMoney(avg);
-  $('#dailyAverageText').textContent = `${fmtMoney(totalExp)} sur ${daysElapsed} jour${daysElapsed > 1 ? 's' : ''}`;
+  $('#dailyAverageText').textContent = fmtMoney(totalExp) + ' sur ' + daysElapsed + ' jour' + (daysElapsed > 1 ? 's' : '');
 
-  // Compare last 6 months (reuse trend-like bar)
   const months = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(y, m - 1 - i, 1);
-    months.push(ymKey(d));
-  }
+  for (let i = 5; i >= 0; i--) months.push(ymKey(new Date(y, m - 1 - i, 1)));
   const compareData = months.map(ym => totals(txOfMonth(ym)).expense);
-
   const ctx = $('#compareChart').getContext('2d');
   if (charts.compare) charts.compare.destroy();
   charts.compare = new Chart(ctx, {
@@ -427,18 +359,14 @@ function renderStats() {
     data: {
       labels: months.map(ym => prettyMonth(ym).replace(/ \d{4}$/, '')),
       datasets: [{
-        label: 'Dépenses',
-        data: compareData,
+        label: 'Dépenses', data: compareData,
         backgroundColor: months.map(ym => ym === currentMonth ? '#3b82f6' : '#94a3b8'),
         borderRadius: 6,
       }],
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: (c) => fmtMoney(c.parsed.y) } },
-      },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => fmtMoney(c.parsed.y) } } },
       scales: {
         y: { ticks: { callback: (v) => fmtMoneyShort(v), font: { size: 10 } } },
         x: { ticks: { font: { size: 10 } } },
@@ -446,45 +374,82 @@ function renderStats() {
     },
   });
 
-  // Yearly total
   const yearTxs = state.transactions.filter(t => t.date.startsWith(String(y) + '-'));
   const yt = totals(yearTxs);
   $('#yearlyTotal').textContent = fmtMoney(yt.expense);
-  $('#yearlyText').textContent = `Revenus ${y} : ${fmtMoney(yt.income)} · Solde : ${fmtMoney(yt.balance)}`;
+  $('#yearlyText').textContent = 'Revenus ' + y + ' : ' + fmtMoney(yt.income) + ' · Solde : ' + fmtMoney(yt.balance);
 }
 
 // ---------- Settings ----------
 function renderSettings() {
   $('#budgetInput').value = state.settings.monthlyBudget || '';
-  $('#categoryList').innerHTML = state.categories.map(c => `
-    <li data-cat-id="${c.id}">
-      <div class="cat-icon" style="background:${c.color}22;color:${c.color}">${c.icon}</div>
-      <span class="cat-name">${escapeHtml(c.name)}</span>
-      <span class="cat-type">${c.type === 'expense' ? 'Dépense' : c.type === 'income' ? 'Revenu' : 'Les deux'}</span>
-      <button class="cat-edit">Modifier</button>
-    </li>
-  `).join('');
+  $('#categoryList').innerHTML = state.categories.map(c =>
+    '<li data-cat-id="' + c.id + '">' +
+    '<div class="cat-icon" style="background:' + c.color + '22;color:' + c.color + '">' + c.icon + '</div>' +
+    '<span class="cat-name">' + escapeHtml(c.name) + '</span>' +
+    '<span class="cat-type">' + (c.type === 'expense' ? 'Dépense' : c.type === 'income' ? 'Revenu' : 'Les deux') + '</span>' +
+    '<button class="cat-edit">Modifier</button></li>'
+  ).join('');
   $('#categoryList').querySelectorAll('li').forEach(li => {
     li.querySelector('.cat-edit').addEventListener('click', () => openCatModal(li.dataset.catId));
   });
 
+  // Sync UI
+  const pInfo = SyncModule.platformInfo[SyncModule.platform];
+  const badge = $('#syncPlatformBadge');
+  if (badge) badge.textContent = pInfo.icon + ' ' + pInfo.cloudName;
+
+  const platformNameEl = $('#syncPlatformName');
+  if (platformNameEl) platformNameEl.textContent = pInfo.name;
+
+  const deviceInput = $('#deviceNameInput');
+  if (deviceInput && !deviceInput.dataset.filled) {
+    deviceInput.value = SyncModule.getDeviceName();
+    deviceInput.dataset.filled = '1';
+  }
+
+  const familyInput = $('#familyKeyInput');
+  if (familyInput && !familyInput.dataset.filled) {
+    familyInput.value = SyncModule.getFamilyKey();
+    familyInput.dataset.filled = '1';
+  }
+
+  const saveHint = $('#syncSaveHint');
+  if (saveHint) saveHint.textContent = 'vers ' + pInfo.cloudName;
+
+  const dot = $('#syncDot');
+  const statusText = $('#syncStatusText');
+  const lastSync = state.settings.lastSync;
+  if (dot && statusText) {
+    if (!lastSync) {
+      dot.className = 'sync-dot never';
+      statusText.textContent = 'Jamais synchronisé — pense à sauvegarder !';
+    } else {
+      const diffMin = Math.floor((Date.now() - new Date(lastSync).getTime()) / 60000);
+      dot.className = 'sync-dot ' + (diffMin < 1440 ? 'ok' : 'warn');
+      statusText.textContent = SyncModule.formatSyncTime(lastSync);
+    }
+  }
+
+  const guideSteps = $('#syncGuideSteps');
+  if (guideSteps) {
+    const steps = SyncModule.instructions[SyncModule.platform];
+    guideSteps.innerHTML = steps.map(s => '<li>' + escapeHtml(s) + '</li>').join('');
+  }
+
   const lastSyncEl = $('#lastSyncText');
-  if (lastSyncEl) lastSyncEl.textContent = 'Dernière sauvegarde : ' + formatSyncTime(state.settings.lastSync);
+  if (lastSyncEl) lastSyncEl.textContent = SyncModule.formatSyncTime(state.settings.lastSync);
 }
 
 // ---------- Transaction modal ----------
 function openTxModal(txId) {
-  const modal = $('#txModal');
   const existing = txId ? state.transactions.find(t => t.id === txId) : null;
   $('#txId').value = existing?.id || '';
   $('#txAmount').value = existing?.amount ?? '';
   $('#txDate').value = existing?.date || todayISO();
   $('#txDescription').value = existing?.description || '';
   $('#txRecurring').checked = !!existing?.recurring;
-
-  const type = existing?.type || 'expense';
-  setTxType(type);
-
+  setTxType(existing?.type || 'expense');
   if (existing) {
     $('#txCategory').value = existing.categoryId;
     $('#txModalTitle').textContent = existing.type === 'expense' ? 'Modifier la dépense' : 'Modifier le revenu';
@@ -493,15 +458,14 @@ function openTxModal(txId) {
     $('#txModalTitle').textContent = 'Nouvelle dépense';
     $('#deleteTx').hidden = true;
   }
-
-  modal.hidden = false;
+  $('#txModal').hidden = false;
   setTimeout(() => $('#txAmount').focus(), 100);
 }
 
 function setTxType(type) {
   $$('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
   const cats = state.categories.filter(c => c.type === type || c.type === 'both');
-  $('#txCategory').innerHTML = cats.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  $('#txCategory').innerHTML = cats.map(c => '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>').join('');
   $('#txModalTitle').textContent = $('#txId').value
     ? (type === 'expense' ? 'Modifier la dépense' : 'Modifier le revenu')
     : (type === 'expense' ? 'Nouvelle dépense' : 'Nouveau revenu');
@@ -528,19 +492,16 @@ function saveTransaction(e) {
 
   saveState();
   closeTxModal();
-  toast(existing ? 'Modifié' : 'Ajouté');
+  toast(existing ? 'Modifié ✔' : 'Ajouté ✔');
   refreshAll();
 }
 
 function deleteTransaction() {
   const id = $('#txId').value;
   if (!id) return;
-  const tx = state.transactions.find(t => t.id === id);
   const hasChildren = state.transactions.some(t => t.recurringParentId === id);
-  let msg = 'Supprimer cette transaction ?';
-  if (hasChildren) msg = 'Supprimer aussi toutes les occurrences récurrentes ?';
+  const msg = hasChildren ? 'Supprimer aussi toutes les occurrences récurrentes ?' : 'Supprimer cette transaction ?';
   if (!confirm(msg)) return;
-
   state.transactions = state.transactions.filter(t => t.id !== id && t.recurringParentId !== id);
   saveState();
   closeTxModal();
@@ -548,9 +509,7 @@ function deleteTransaction() {
   refreshAll();
 }
 
-function closeTxModal() {
-  $('#txModal').hidden = true;
-}
+function closeTxModal() { $('#txModal').hidden = true; }
 
 // ---------- Category modal ----------
 function openCatModal(catId) {
@@ -572,13 +531,10 @@ function saveCategory(e) {
   const icon = $('#catIcon').value.trim() || '📦';
   const color = $('#catColor').value;
   const type = $('#catType').value;
-
   if (!name) return toast('Nom requis');
-
   const existing = state.categories.find(c => c.id === id);
   if (existing) Object.assign(existing, { name, icon, color, type });
   else state.categories.push({ id, name, icon, color, type });
-
   saveState();
   $('#catModal').hidden = true;
   delete $('#filterCategory').dataset.ready;
@@ -591,11 +547,10 @@ function deleteCategory() {
   const id = $('#catId').value;
   if (!id) return;
   const used = state.transactions.some(t => t.categoryId === id);
-  if (used) {
-    if (!confirm('Cette catégorie contient des transactions. Les transactions seront conservées mais sans catégorie valide. Continuer ?')) return;
-  } else {
-    if (!confirm('Supprimer cette catégorie ?')) return;
-  }
+  const msg = used
+    ? 'Cette catégorie contient des transactions. Elles seront conservées sans catégorie. Continuer ?'
+    : 'Supprimer cette catégorie ?';
+  if (!confirm(msg)) return;
   state.categories = state.categories.filter(c => c.id !== id);
   saveState();
   $('#catModal').hidden = true;
@@ -608,26 +563,17 @@ function deleteCategory() {
 // ---------- Export / Import ----------
 function exportJson() {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  downloadBlob(blob, `mes-depenses-${todayISO()}.json`);
+  downloadBlob(blob, 'mes-depenses-' + todayISO() + '.json');
 }
 
 function exportCsv() {
-  const rows = [['Date', 'Type', 'Catégorie', 'Description', 'Montant (FCFA)']];
-  state.transactions
-    .slice()
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .forEach(t => {
-      const c = getCategory(t.categoryId);
-      rows.push([t.date, t.type === 'expense' ? 'Dépense' : 'Revenu', c.name, t.description || '', t.amount]);
-    });
-  const csv = rows.map(r => r.map(csvCell).join(',')).join('\n');
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
-  downloadBlob(blob, `mes-depenses-${todayISO()}.csv`);
-}
-
-function csvCell(v) {
-  const s = String(v ?? '');
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  const rows = [['Date', 'Type', 'Categorie', 'Description', 'Montant (FCFA)']];
+  state.transactions.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach(t => {
+    const c = getCategory(t.categoryId);
+    rows.push([t.date, t.type === 'expense' ? 'Depense' : 'Revenu', c.name, t.description || '', t.amount]);
+  });
+  const csv = rows.map(r => r.map(v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
+  downloadBlob(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }), 'mes-depenses-' + todayISO() + '.csv');
 }
 
 function downloadBlob(blob, filename) {
@@ -643,144 +589,91 @@ function importJson(file) {
   reader.onload = () => {
     try {
       const data = JSON.parse(reader.result);
-      if (!data.transactions || !data.categories) throw new Error('Fichier invalide');
+      if (!data.transactions || !data.categories) throw new Error('invalide');
       if (!confirm('Remplacer toutes tes données actuelles par celles du fichier ?')) return;
       state = {
         transactions: data.transactions,
         categories: data.categories,
         settings: { ...defaultState.settings, ...(data.settings || {}) },
       };
-      saveState();
-      applyTheme();
-      toast('Importé');
-      refreshAll();
-    } catch (err) {
-      toast('Fichier invalide');
-    }
+      saveState(); applyTheme(); toast('Importé ✔'); refreshAll();
+    } catch { toast('Fichier invalide'); }
   };
   reader.readAsText(file);
 }
 
-// ---------- Cloud sync (via iOS Share / file picker) ----------
-const SYNC_FILENAME = 'mes-depenses-sync.json';
-
+// ---------- Cloud sync v2 ----------
 async function cloudSave() {
-  const payload = { ...state, _savedAt: new Date().toISOString() };
-  const json = JSON.stringify(payload, null, 2);
-  const file = new File([json], SYNC_FILENAME, { type: 'application/json' });
-
-  // iOS 15+ / Safari : Web Share API avec fichier → menu Partager → Fichiers
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: 'Mes Dépenses — Sauvegarde' });
-      state.settings.lastSync = new Date().toISOString();
-      saveState();
-      toast('Sauvegardé ✔');
-      renderSettings();
-      return;
-    } catch (err) {
-      if (err && err.name === 'AbortError') return;
-    }
+  const result = await SyncModule.syncSave(state);
+  if (result.aborted) return;
+  if (result.success) {
+    state.settings.lastSync = new Date().toISOString();
+    saveState();
+    toast(result.method === 'share' ? 'Sauvegardé ✔' : 'Fichier téléchargé ✔');
+    renderSettings();
   }
-
-  // Fallback desktop / navigateur sans Share API
-  const blob = new Blob([json], { type: 'application/json' });
-  downloadBlob(blob, SYNC_FILENAME);
-  state.settings.lastSync = new Date().toISOString();
-  saveState();
-  toast('Fichier téléchargé');
-  renderSettings();
 }
 
 function cloudRestore(file) {
   const reader = new FileReader();
   reader.onload = () => {
-    try {
-      const data = JSON.parse(reader.result);
-      if (!Array.isArray(data.transactions) || !Array.isArray(data.categories)) {
-        throw new Error('invalid');
-      }
-
-      const localCount = state.transactions.length;
-      const remoteCount = data.transactions.length;
-      const savedAt = data._savedAt
-        ? new Date(data._savedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
-        : 'inconnue';
-
-      const choice = prompt(
-        `Fichier du ${savedAt}\n` +
-        `Local : ${localCount} transaction${localCount > 1 ? 's' : ''}\n` +
-        `Fichier : ${remoteCount} transaction${remoteCount > 1 ? 's' : ''}\n\n` +
-        `Tape F pour FUSIONNER (recommandé — ajoute ce qui manque)\n` +
-        `Tape R pour REMPLACER tout\n` +
-        `Annule pour ne rien faire.`
-      );
-
-      if (!choice) return;
-      const mode = choice.trim().toUpperCase();
-
-      if (mode === 'F') {
-        const added = mergeIntoState(data);
-        toast(added > 0 ? `Fusionné : +${added} transaction${added > 1 ? 's' : ''}` : 'Déjà à jour');
-      } else if (mode === 'R') {
-        if (!confirm('Remplacer toutes tes données actuelles ? Action irréversible.')) return;
-        state = {
-          transactions: data.transactions,
-          categories: data.categories.length ? data.categories : defaultCategories,
-          settings: { ...defaultState.settings, ...(data.settings || {}), lastSync: new Date().toISOString() },
-        };
-        saveState();
-        applyTheme();
-        toast('Données remplacées');
-      } else {
-        toast('Annulé');
-        return;
-      }
-
-      delete $('#filterCategory').dataset.ready;
-      refreshAll();
-      renderSettings();
-    } catch {
-      toast('Fichier invalide');
-    }
+    const { ok, data, error } = SyncModule.parseSyncFile(reader.result);
+    if (!ok) return toast(error || 'Fichier invalide');
+    openSyncModal(data);
   };
   reader.readAsText(file);
 }
 
-function mergeIntoState(data) {
-  const txMap = new Map(state.transactions.map(t => [t.id, t]));
-  let added = 0;
-  data.transactions.forEach(t => {
-    if (!txMap.has(t.id)) { txMap.set(t.id, t); added++; }
+function openSyncModal(remoteData) {
+  const analysis = SyncModule.analyzeSync(state, remoteData);
+
+  $('#syncModalContent').innerHTML =
+    '<p class="muted small" style="margin-bottom:10px">Fichier de <strong>' + escapeHtml(analysis.deviceName) + '</strong></p>' +
+    '<div class="sync-modal-info">' +
+      '<div class="sync-modal-row"><span>📅 Sauvegardé le</span><span>' + analysis.savedAt + '</span></div>' +
+      '<div class="sync-modal-row"><span>📱 Sur cet appareil</span><span>' + state.transactions.length + ' transaction' + (state.transactions.length > 1 ? 's' : '') + '</span></div>' +
+      '<div class="sync-modal-row"><span>📂 Dans le fichier</span><span>' + analysis.total + ' transaction' + (analysis.total > 1 ? 's' : '') + '</span></div>' +
+      '<div class="sync-modal-row"><span>✨ Nouvelles à ajouter</span><span style="color:var(--income)">' + analysis.onlyRemote + '</span></div>' +
+      '<div class="sync-modal-row"><span>📍 Uniquement en local</span><span style="color:var(--warning)">' + analysis.onlyLocal + '</span></div>' +
+    '</div>' +
+    (analysis.sameFamily ? '<p class="sync-family-match">✅ Code famille : ' + escapeHtml(analysis.familyKey) + '</p>' : '') +
+    '<p class="muted small" style="margin-top:10px"><strong>Fusionner</strong> (recommandé) : combine les deux sans perdre de données.<br><strong>Remplacer</strong> : écrase tes données locales.</p>';
+
+  $('#syncModalActions').innerHTML =
+    '<button class="sync-merge-btn" id="doMerge">🔀 Fusionner</button>' +
+    '<button class="sync-replace-btn" id="doReplace">🔄 Remplacer tout</button>' +
+    '<button class="sync-cancel-btn" id="doCancel">Annuler</button>';
+
+  $('#doMerge').addEventListener('click', () => {
+    const merged = SyncModule.mergeStates(state, remoteData);
+    state.transactions = merged.transactions;
+    state.categories = merged.categories;
+    state.settings = merged.settings;
+    saveState();
+    delete $('#filterCategory').dataset.ready;
+    $('#syncModal').hidden = true;
+    const added = merged._mergeStats.added;
+    toast(added > 0 ? '✔ Fusionné — +' + added + ' transaction' + (added > 1 ? 's' : '') : '✔ Déjà à jour');
+    refreshAll(); renderSettings();
   });
-  state.transactions = [...txMap.values()];
 
-  const catMap = new Map(state.categories.map(c => [c.id, c]));
-  data.categories.forEach(c => {
-    if (!catMap.has(c.id)) catMap.set(c.id, c);
+  $('#doReplace').addEventListener('click', () => {
+    if (!confirm('Remplacer toutes tes données locales ? Action irréversible.')) return;
+    state = {
+      transactions: remoteData.transactions,
+      categories: remoteData.categories?.length ? remoteData.categories : defaultCategories,
+      settings: { ...defaultState.settings, ...(remoteData.settings || {}), lastSync: new Date().toISOString() },
+    };
+    saveState(); applyTheme();
+    delete $('#filterCategory').dataset.ready;
+    $('#syncModal').hidden = true;
+    toast('✔ Données remplacées');
+    refreshAll(); renderSettings();
   });
-  state.categories = [...catMap.values()];
 
-  if (!state.settings.monthlyBudget && data.settings?.monthlyBudget) {
-    state.settings.monthlyBudget = data.settings.monthlyBudget;
-  }
-
-  state.settings.lastSync = new Date().toISOString();
-  saveState();
-  return added;
-}
-
-function formatSyncTime(iso) {
-  if (!iso) return 'jamais';
-  const dt = new Date(iso);
-  const diffMin = Math.floor((Date.now() - dt.getTime()) / 60000);
-  if (diffMin < 1) return "à l'instant";
-  if (diffMin < 60) return `il y a ${diffMin} min`;
-  const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `il y a ${diffH} h`;
-  const diffD = Math.floor(diffH / 24);
-  if (diffD < 7) return `il y a ${diffD} jour${diffD > 1 ? 's' : ''}`;
-  return dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  $('#doCancel').addEventListener('click', () => { $('#syncModal').hidden = true; });
+  $('#closeSyncModal').addEventListener('click', () => { $('#syncModal').hidden = true; });
+  $('#syncModal').hidden = false;
 }
 
 function clearAllData() {
@@ -789,11 +682,10 @@ function clearAllData() {
   localStorage.removeItem(STORAGE_KEY);
   state = structuredClone(defaultState);
   toast('Données effacées');
-  refreshAll();
-  renderSettings();
+  refreshAll(); renderSettings();
 }
 
-// ---------- Refresh orchestrator ----------
+// ---------- Refresh ----------
 function refreshAll() {
   const active = document.querySelector('.view.active')?.id;
   if (active === 'view-dashboard') renderDashboard();
@@ -828,17 +720,13 @@ function bindEvents() {
   $('#filterType').addEventListener('change', renderTransactions);
 
   $('#saveBudget').addEventListener('click', () => {
-    const v = parseFloat($('#budgetInput').value) || 0;
-    state.settings.monthlyBudget = v;
-    saveState();
-    toast('Budget enregistré');
-    refreshAll();
+    state.settings.monthlyBudget = parseFloat($('#budgetInput').value) || 0;
+    saveState(); toast('Budget enregistré'); refreshAll();
   });
 
   $$('.theme-btn').forEach(b => b.addEventListener('click', () => {
     state.settings.theme = b.dataset.theme;
-    saveState();
-    applyTheme();
+    saveState(); applyTheme();
   }));
 
   $('#exportJson').addEventListener('click', exportJson);
@@ -850,6 +738,28 @@ function bindEvents() {
   $('#cloudRestore').addEventListener('change', (e) => {
     if (e.target.files[0]) cloudRestore(e.target.files[0]);
     e.target.value = '';
+  });
+
+  // Sync v2 : nom appareil, code famille, guide
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'saveDeviceName') {
+      const v = $('#deviceNameInput')?.value?.trim();
+      if (v) { SyncModule.setDeviceName(v); toast('Nom enregistré ✔'); }
+    }
+    if (e.target.id === 'saveFamilyKey') {
+      const v = ($('#familyKeyInput')?.value || '').trim().toUpperCase();
+      SyncModule.setFamilyKey(v);
+      toast(v ? 'Code famille enregistré ✔' : 'Code famille supprimé');
+    }
+    if (e.target.id === 'genFamilyKey') {
+      const key = SyncModule.generateFamilyKey();
+      const input = $('#familyKeyInput');
+      if (input) { input.value = key; input.dataset.filled = '1'; }
+    }
+    if (e.target.id === 'syncGuideToggle') {
+      const guide = $('#syncGuide');
+      if (guide) guide.hidden = !guide.hidden;
+    }
   });
 }
 
