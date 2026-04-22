@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Génération des icônes</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 560px; margin: 40px auto; padding: 20px; background: #f4f5f7; color: #0f172a; }
+    h1 { margin-top: 0; }
+    .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 16px; }
+    button { background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-right: 8px; margin-top: 8px; }
+    button:hover { background: #2563eb; }
+    .preview { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+    .preview figure { margin: 0; text-align: center; font-size: 12px; color: #64748b; }
+    canvas { border-radius: 14px; background: #eef0f4; }
+    ol { padding-left: 20px; line-height: 1.7; }
+    code { background: #eef0f4; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>🛠️ Génération des icônes</h1>
+
+  <div class="card">
+    <p>Cette page génère les icônes PNG nécessaires à l'installation de l'app sur iPhone.</p>
+    <ol>
+      <li>Clique sur <b>Générer et télécharger</b>.</li>
+      <li>Trois fichiers seront téléchargés : <code>icon-192.png</code>, <code>icon-512.png</code>, <code>icon-maskable-512.png</code>.</li>
+      <li>Crée un dossier <code>icons/</code> à côté de <code>index.html</code> et place-les dedans.</li>
+    </ol>
+    <button onclick="generateAll()">Générer et télécharger</button>
+    <button onclick="previewAll()">Prévisualiser</button>
+    <div class="preview" id="preview"></div>
+  </div>
+
+  <script>
+    function drawIcon(size, maskable = false) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // Safe area for maskable: keep important content in inner 80%
+      const pad = maskable ? size * 0.1 : 0;
+      const inner = size - pad * 2;
+
+      // Background gradient
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, '#3b82f6');
+      grad.addColorStop(1, '#1d4ed8');
+      ctx.fillStyle = grad;
+      if (maskable) {
+        ctx.fillRect(0, 0, size, size);
+      } else {
+        const r = size * 0.2;
+        roundRect(ctx, 0, 0, size, size, r);
+        ctx.fill();
+      }
+
+      // Soft circle
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = Math.max(3, size * 0.02);
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, inner * 0.42, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // "F" large
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `800 ${Math.round(inner * 0.48)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+      ctx.fillText('F', size / 2, size / 2 - inner * 0.06);
+
+      // "CFA" small
+      ctx.font = `700 ${Math.round(inner * 0.14)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+      ctx.fillText('CFA', size / 2, size / 2 + inner * 0.22);
+
+      return canvas;
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y,     x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x,     y + h, r);
+      ctx.arcTo(x,     y + h, x,     y,     r);
+      ctx.arcTo(x,     y,     x + w, y,     r);
+      ctx.closePath();
+    }
+
+    function downloadCanvas(canvas, filename) {
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      }, 'image/png');
+    }
+
+    function previewAll() {
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '';
+      [
+        { size: 192, mask: false, label: 'icon-192.png' },
+        { size: 512, mask: false, label: 'icon-512.png' },
+        { size: 512, mask: true,  label: 'icon-maskable-512.png' },
+      ].forEach(({ size, mask, label }) => {
+        const c = drawIcon(size, mask);
+        const shown = document.createElement('canvas');
+        const displaySize = Math.min(128, size);
+        shown.width = displaySize; shown.height = displaySize;
+        shown.getContext('2d').drawImage(c, 0, 0, displaySize, displaySize);
+        const fig = document.createElement('figure');
+        fig.append(shown, document.createElement('figcaption'));
+        fig.querySelector('figcaption').textContent = label;
+        preview.appendChild(fig);
+      });
+    }
+
+    async function generateAll() {
+      const targets = [
+        { size: 192, mask: false, name: 'icon-192.png' },
+        { size: 512, mask: false, name: 'icon-512.png' },
+        { size: 512, mask: true,  name: 'icon-maskable-512.png' },
+      ];
+      for (const t of targets) {
+        const canvas = drawIcon(t.size, t.mask);
+        downloadCanvas(canvas, t.name);
+        await new Promise((r) => setTimeout(r, 350));
+      }
+    }
+
+    previewAll();
+  </script>
+</body>
+</html>

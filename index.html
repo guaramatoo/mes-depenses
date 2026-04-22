@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mes Dépenses" />
+  <title>Mes Dépenses — FCFA</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="app-header">
+    <button class="icon-btn" id="prevMonth" aria-label="Mois précédent">‹</button>
+    <div class="header-title">
+      <h1 id="currentMonthLabel">—</h1>
+      <p id="headerSubtitle" class="muted">Mes dépenses</p>
+    </div>
+    <button class="icon-btn" id="nextMonth" aria-label="Mois suivant">›</button>
+  </header>
+
+  <!-- ========== MAIN VIEWS ========== -->
+  <main id="main">
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="summary-grid">
+        <div class="card card-expense">
+          <span class="card-label">Dépenses</span>
+          <span class="card-amount" id="sumExpense">0</span>
+        </div>
+        <div class="card card-income">
+          <span class="card-label">Revenus</span>
+          <span class="card-amount" id="sumIncome">0</span>
+        </div>
+        <div class="card card-balance">
+          <span class="card-label">Solde</span>
+          <span class="card-amount" id="sumBalance">0</span>
+        </div>
+        <div class="card card-budget">
+          <span class="card-label">Budget restant</span>
+          <span class="card-amount" id="sumBudget">0</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Budget mensuel</h2>
+          <span class="muted" id="budgetPercent">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="budgetProgress"></div>
+        </div>
+        <p class="muted small" id="budgetText">Définis ton budget dans les Paramètres</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Par catégorie</h2>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="categoryChart"></canvas>
+        </div>
+        <div id="categoryLegend" class="legend"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Évolution (6 derniers mois)</h2>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Dernières transactions</h2>
+          <button class="link-btn" data-nav="transactions">Tout voir</button>
+        </div>
+        <ul class="tx-list" id="recentTx"></ul>
+      </div>
+    </section>
+
+    <!-- TRANSACTIONS -->
+    <section class="view" id="view-transactions">
+      <div class="filters">
+        <input type="search" id="searchInput" placeholder="Rechercher…" />
+        <select id="filterCategory"><option value="">Toutes catégories</option></select>
+        <select id="filterType">
+          <option value="">Tous</option>
+          <option value="expense">Dépenses</option>
+          <option value="income">Revenus</option>
+        </select>
+      </div>
+      <div id="txGroups"></div>
+      <p class="empty" id="txEmpty" hidden>Aucune transaction ce mois-ci.</p>
+    </section>
+
+    <!-- STATS -->
+    <section class="view" id="view-stats">
+      <div class="card">
+        <div class="card-header"><h2>Top catégories du mois</h2></div>
+        <ul class="ranking" id="topCategories"></ul>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Moyenne journalière</h2></div>
+        <p class="big-number" id="dailyAverage">0 FCFA</p>
+        <p class="muted small" id="dailyAverageText"></p>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Comparaison mensuelle</h2></div>
+        <div class="chart-wrap">
+          <canvas id="compareChart"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Total annuel</h2></div>
+        <p class="big-number" id="yearlyTotal">0 FCFA</p>
+        <p class="muted small" id="yearlyText"></p>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings">
+      <div class="card">
+        <div class="card-header"><h2>Budget mensuel (FCFA)</h2></div>
+        <input type="number" id="budgetInput" inputmode="numeric" min="0" step="1000" placeholder="Ex : 150000" />
+        <button class="primary-btn" id="saveBudget">Enregistrer</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Catégories</h2>
+          <button class="link-btn" id="addCategoryBtn">+ Ajouter</button>
+        </div>
+        <ul class="cat-list" id="categoryList"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Thème</h2></div>
+        <div class="theme-row">
+          <button class="theme-btn" data-theme="auto">Auto</button>
+          <button class="theme-btn" data-theme="light">Clair</button>
+          <button class="theme-btn" data-theme="dark">Sombre</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Synchronisation multi-appareils</h2></div>
+        <p class="muted small">Sauvegarde tes données dans iCloud Drive (ou Google Drive/Dropbox) pour les retrouver sur un autre iPhone. À la restauration, tu pourras fusionner ou remplacer.</p>
+        <button class="primary-btn" id="cloudSave">📤 Sauvegarder dans le cloud</button>
+        <label class="secondary-btn file-label">
+          📥 Restaurer depuis le cloud
+          <input type="file" id="cloudRestore" accept="application/json" hidden />
+        </label>
+        <p class="muted small" id="lastSyncText">Dernière sauvegarde : jamais</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Données</h2></div>
+        <button class="secondary-btn" id="exportJson">Exporter (JSON)</button>
+        <button class="secondary-btn" id="exportCsv">Exporter (CSV)</button>
+        <label class="secondary-btn file-label">
+          Importer (JSON)
+          <input type="file" id="importJson" accept="application/json" hidden />
+        </label>
+        <button class="danger-btn" id="clearData">Tout effacer</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>À propos</h2></div>
+        <p class="muted small">Mes Dépenses — PWA locale. Toutes tes données restent sur ton iPhone.</p>
+        <p class="muted small">Version 1.0 · Devise : FCFA</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========== BOTTOM NAV ========== -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-nav="dashboard">
+      <span class="nav-icon">🏠</span><span class="nav-label">Accueil</span>
+    </button>
+    <button class="nav-btn" data-nav="transactions">
+      <span class="nav-icon">📋</span><span class="nav-label">Historique</span>
+    </button>
+    <button class="nav-btn fab" id="openAdd" aria-label="Ajouter">
+      <span class="plus">+</span>
+    </button>
+    <button class="nav-btn" data-nav="stats">
+      <span class="nav-icon">📊</span><span class="nav-label">Stats</span>
+    </button>
+    <button class="nav-btn" data-nav="settings">
+      <span class="nav-icon">⚙️</span><span class="nav-label">Réglages</span>
+    </button>
+  </nav>
+
+  <!-- ========== MODAL: ADD/EDIT TRANSACTION ========== -->
+  <div class="modal" id="txModal" hidden>
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2 id="txModalTitle">Nouvelle dépense</h2>
+        <button class="icon-btn" id="closeTxModal" aria-label="Fermer">✕</button>
+      </div>
+
+      <div class="type-toggle">
+        <button class="type-btn active" data-type="expense">− Dépense</button>
+        <button class="type-btn" data-type="income">+ Revenu</button>
+      </div>
+
+      <form id="txForm" autocomplete="off">
+        <input type="hidden" id="txId" />
+
+        <label>Montant (FCFA)</label>
+        <input type="number" id="txAmount" inputmode="numeric" min="0" step="1" required placeholder="0" />
+
+        <label>Catégorie</label>
+        <select id="txCategory" required></select>
+
+        <label>Date</label>
+        <input type="date" id="txDate" required />
+
+        <label>Description (optionnel)</label>
+        <input type="text" id="txDescription" placeholder="Ex : Marché de Treichville" maxlength="100" />
+
+        <label class="check-row">
+          <input type="checkbox" id="txRecurring" />
+          <span>Transaction récurrente chaque mois</span>
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="danger-btn" id="deleteTx" hidden>Supprimer</button>
+          <button type="submit" class="primary-btn">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== MODAL: ADD/EDIT CATEGORY ========== -->
+  <div class="modal" id="catModal" hidden>
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2 id="catModalTitle">Nouvelle catégorie</h2>
+        <button class="icon-btn" id="closeCatModal" aria-label="Fermer">✕</button>
+      </div>
+      <form id="catForm">
+        <input type="hidden" id="catId" />
+
+        <label>Nom</label>
+        <input type="text" id="catName" required maxlength="30" placeholder="Ex : Restaurant" />
+
+        <label>Emoji / icône</label>
+        <input type="text" id="catIcon" maxlength="4" placeholder="🍽️" />
+
+        <label>Couleur</label>
+        <input type="color" id="catColor" value="#3b82f6" />
+
+        <label>Type</label>
+        <select id="catType">
+          <option value="expense">Dépense</option>
+          <option value="income">Revenu</option>
+          <option value="both">Les deux</option>
+        </select>
+
+        <div class="modal-actions">
+          <button type="button" class="danger-btn" id="deleteCat" hidden>Supprimer</button>
+          <button type="submit" class="primary-btn">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== TOAST ========== -->
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- Chart.js (local-first with CDN fallback-friendly caching via service worker) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
