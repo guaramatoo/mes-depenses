@@ -572,3 +572,39 @@ input:focus,select:focus{border-color:var(--terracotta);box-shadow:0 0 0 3px rgb
   background:var(--terra-light);padding:12px 20px;
   border-radius:12px;display:inline-block;margin:8px 0;
 }
+
+/* ===== PRENOM CARD ===== */
+.prenom-card {
+  text-align:center;
+  background:linear-gradient(135deg,#f0f9ff,var(--bg-card));
+  border:2px solid #bae6fd;
+}
+.prenom-icon {font-size:44px;margin-bottom:10px}
+
+/* ===== BUDGET HISTORY ===== */
+.budget-hist-row {
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.budget-hist-row:last-child {border-bottom:none}
+.budget-hist-month {
+  font-size:12px;font-weight:700;color:var(--ink-soft);
+  min-width:70px;text-transform:capitalize;
+}
+.budget-hist-month.current {color:var(--terracotta)}
+.budget-hist-bar-wrap {flex:1}
+.budget-hist-bar {
+  height:8px;background:var(--bg-soft);
+  border-radius:999px;overflow:hidden;
+}
+.budget-hist-fill {
+  height:100%;border-radius:999px;
+  transition:width .6s cubic-bezier(.34,1.56,.64,1);
+}
+.budget-hist-amount {
+  font-family:var(--font-d);font-size:13px;font-weight:900;
+  white-space:nowrap;min-width:80px;text-align:right;
+}
+.budget-hist-amount.over {color:#ef4444}
+.budget-hist-amount.ok   {color:#22c55e}
+.budget-hist-icon {font-size:14px;flex-shrink:0}

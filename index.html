@@ -145,6 +145,12 @@
           <div class="card-header"><h2>📅 Comparaison mensuelle</h2></div>
           <div class="chart-wrap"><canvas id="compareChart"></canvas></div>
         </div>
+        <!-- Historique depassements -->
+        <div class="card">
+          <div class="card-header"><h2>📊 Budget mois par mois</h2></div>
+          <div id="budgetHistory"></div>
+        </div>
+
         <div class="card stats-highlight-card stat-annual">
           <p class="stats-highlight-label">🗓️ Total annuel</p>
           <p class="stats-highlight-num" id="yearlyTotal">0 FCFA</p>
@@ -165,7 +171,18 @@
           <button class="danger-btn" id="logoutBtn">🚪 Changer de code famille</button>
         </div>
 
-        <!-- Budget -->
+        <!-- Prenom -->
+        <div class="card prenom-card">
+          <div class="prenom-icon">👤</div>
+          <h2 class="budget-setup-title">Ton prénom</h2>
+          <p class="budget-setup-sub">Pour des messages personnalisés rien que pour toi</p>
+          <div class="sync-device-edit">
+            <input type="text" id="prenomInput" placeholder="Ex : Hassan ou Aurore" maxlength="20" />
+            <button class="sync-save-btn" id="savePrenomBtn">✓</button>
+          </div>
+        </div>
+
+      <!-- Budget -->
         <div class="card budget-setup-card">
           <div class="budget-setup-icon">🎯</div>
           <h2 class="budget-setup-title">Mon budget mensuel</h2>
@@ -307,7 +324,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // Rendre Firebase accessible globalement
     window.__firebase = { db, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc, updateDoc };
+
+    // Signaler que Firebase est prêt
+    window.dispatchEvent(new Event('firebase-ready'));
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>

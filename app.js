@@ -91,7 +91,14 @@ async function doLogin(code) {
     $('#loginHint').textContent='⚠️ Code trop court — minimum 4 caractères';
     return;
   }
-  $('#loginHint').textContent='⏳ Connexion…';
+
+  // Vérifier que Firebase est disponible
+  if(!window.__firebase) {
+    $('#loginHint').textContent='⚠️ Connexion internet requise. Vérifie ta connexion et recharge la page.';
+    return;
+  }
+
+  $('#loginHint').textContent='⏳ Connexion en cours…';
   $('#loginBtn').disabled=true;
 
   try {
@@ -102,8 +109,10 @@ async function doLogin(code) {
     updateHeader();
     renderDashboard();
   } catch(e) {
-    $('#loginHint').textContent='❌ Erreur de connexion. Vérifiez votre connexion internet.';
+    $('#loginHint').textContent='❌ Erreur : ' + e.message;
     $('#loginBtn').disabled=false;
+    familyCode='';
+    localStorage.removeItem(LOCAL_KEY);
     console.error(e);
   }
 }
@@ -894,26 +903,43 @@ function registerSW() {
 }
 
 // ---- Init ----
-async function init() {
+document.addEventListener('DOMContentLoaded', () => {
+  // Démarrer immédiatement — login ne nécessite pas Firebase
   applyTheme();
   bindEvents();
   registerSW();
+  showLogin(); // Par défaut montrer login
 
-  // Vérifier si code famille déjà sauvegardé
-  const saved=localStorage.getItem(LOCAL_KEY);
-  if(saved) {
-    familyCode=saved;
-    setSyncStatus(false);
-    hideLogin();
-    updateHeader();
-    try {
-      await startSync();
-    } catch(e) {
+  const saved = localStorage.getItem(LOCAL_KEY);
+
+  const onFirebaseReady = async () => {
+    if (saved) {
+      familyCode = saved;
       setSyncStatus(false);
+      hideLogin();
+      updateHeader();
+      try {
+        await startSync();
+      } catch(e) {
+        setSyncStatus(false);
+        console.error('Sync error:', e);
+      }
     }
-  } else {
-    showLogin();
-  }
-}
+    // Sinon rester sur l'écran de login
+  };
 
-document.addEventListener('DOMContentLoaded',init);
+  if (window.__firebase) {
+    // Firebase déjà chargé
+    onFirebaseReady();
+  } else {
+    // Attendre l'événement firebase-ready
+    window.addEventListener('firebase-ready', onFirebaseReady, { once: true });
+    // Sécurité : si Firebase ne charge pas en 6s
+    setTimeout(() => {
+      if (!window.__firebase) {
+        const hint = document.getElementById('loginHint');
+        if (hint) hint.textContent = '⚠️ Connexion internet requise pour utiliser l'app';
+      }
+    }, 6000);
+  }
+});
