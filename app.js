@@ -171,8 +171,102 @@ function totals(txs) {
   return { expense, income, balance: income - expense };
 }
 
+// ---------- Greeting & Anecdotes ----------
+const GREETINGS = {
+  morning:   { emoji: '☀️', label: 'Bon matin', title: ['Bonne journée !', 'Nouveau jour, nouveau départ', 'Le marché vous attend', 'Une belle journée commence'] },
+  noon:      { emoji: '🌤️', label: 'Midi',      title: ['Pause bien méritée', 'Bon appétit !', 'Midi à Abidjan', 'Temps de recharger'] },
+  afternoon: { emoji: '🌞', label: 'Après-midi', title: ['Bon après-midi', 'La journée avance', 'Garde le rythme', 'Continue comme ça'] },
+  evening:   { emoji: '🌅', label: 'Soirée',    title: ['Bonsoir !', 'Belle soirée', 'Le soleil se couche', 'Fin de journée'] },
+  night:     { emoji: '🌙', label: 'Bonne nuit', title: ['Douce nuit', 'Un dernier coup d\'œil ?', 'Temps de se reposer', 'La nuit porte conseil'] },
+};
+
+const ANECDOTES = {
+  first: [
+    'Commence par ajouter ta première transaction 👇',
+    'Le plus dur, c\'est de commencer. Vas-y !',
+    'Prêt à prendre le contrôle de ton argent ?',
+    'Ton voyage financier commence ici 🌱',
+  ],
+  excellent: [
+    'Tu gères comme un chef ! 👑',
+    'Bravo, ton budget respire 🌿',
+    'Tu es sur la bonne voie, continue !',
+    'Quelle discipline, c\'est admirable 💪',
+    '"Petit à petit, l\'oiseau fait son nid" — proverbe',
+    'Tes finances sont en fête ce mois-ci 🎉',
+  ],
+  good: [
+    'Belle maîtrise de ton budget 👍',
+    'Tu avances bien, garde le cap',
+    'Le mois se passe plutôt bien 😊',
+    'Solide, continue comme ça !',
+  ],
+  warning: [
+    'Attention, le budget fond comme beurre au soleil 🌡️',
+    'Un peu de vigilance cette semaine',
+    'Ralentis un peu, tu approches la limite',
+    'Il est temps de serrer la ceinture un peu 👔',
+  ],
+  over: [
+    'Oups, le budget a été dépassé 😅 On repart de zéro demain !',
+    'Pas grave, le mois prochain sera meilleur 💪',
+    'L\'argent file ? Note chaque dépense pour comprendre',
+    '"Qui va doucement va sûrement" — prends le temps',
+  ],
+  saving: [
+    'Tes économies grandissent 🌱',
+    'Tu mets de côté, bravo !',
+    'Continue d\'épargner, c\'est la clé 🔑',
+  ],
+  motivation: [
+    'Chaque FCFA compte — bienvenue !',
+    'Aujourd\'hui est un bon jour pour commencer',
+    'L\'argent bien géré, c\'est la liberté',
+    '"L\'épargne est la mère de la richesse"',
+    'Un budget, c\'est un plan pour tes rêves',
+    'Garder trace de tout, c\'est le secret 📝',
+  ],
+};
+
+function getTimeOfDay() {
+  const h = new Date().getHours();
+  if (h < 6) return 'night';
+  if (h < 12) return 'morning';
+  if (h < 14) return 'noon';
+  if (h < 18) return 'afternoon';
+  if (h < 22) return 'evening';
+  return 'night';
+}
+
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function renderGreeting() {
+  const tod = getTimeOfDay();
+  const g = GREETINGS[tod];
+  $('#greetingTime').textContent = g.emoji + ' ' + g.label.toUpperCase();
+  $('#greetingTitle').textContent = pickRandom(g.title);
+
+  // Choix de l'anecdote selon l'état financier
+  const txs = txOfMonth(currentMonth);
+  const { expense, income } = totals(txs);
+  const budget = state.settings.monthlyBudget || 0;
+  const totalTx = state.transactions.length;
+
+  let pool;
+  if (totalTx === 0) pool = ANECDOTES.first;
+  else if (budget > 0 && expense > budget) pool = ANECDOTES.over;
+  else if (budget > 0 && expense > budget * 0.85) pool = ANECDOTES.warning;
+  else if (budget > 0 && expense < budget * 0.5 && income > expense) pool = ANECDOTES.excellent;
+  else if (income > expense && income > 0) pool = ANECDOTES.saving;
+  else if (budget > 0) pool = ANECDOTES.good;
+  else pool = ANECDOTES.motivation;
+
+  $('#greetingAnecdote').textContent = pickRandom(pool);
+}
+
 // ---------- Dashboard ----------
 function renderDashboard() {
+  renderGreeting();
   const txs = txOfMonth(currentMonth);
   const { expense, income, balance } = totals(txs);
   $('#sumExpense').textContent = fmtMoney(expense);
@@ -185,8 +279,8 @@ function renderDashboard() {
   $('#budgetProgress').style.width = pct + '%';
   $('#budgetPercent').textContent = budget ? pct.toFixed(0) + '%' : '—';
   $('#budgetText').textContent = budget
-    ? (expense > budget ? '⚠️ Dépassement de ' + fmtMoney(expense - budget) : fmtMoney(expense) + ' dépensés sur ' + fmtMoney(budget))
-    : 'Définis ton budget dans les Paramètres';
+    ? (expense > budget ? '⚠️ Dépassement de ' + fmtMoney(expense - budget) + ' — on reste zen' : fmtMoney(expense) + ' dépensés sur ' + fmtMoney(budget) + ' 💪')
+    : '✨ Définis ton budget dans les Paramètres pour démarrer';
 
   renderCategoryChart(txs);
   renderTrendChart();
