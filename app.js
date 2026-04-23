@@ -239,40 +239,238 @@ function txOfMonth(ym) { return state.transactions.filter(t=>ymKey(t.date)===ym)
 function getCategory(id) { return state.categories.find(c=>c.id===id)||{name:'Autre',icon:'📦',color:'#64748b'}; }
 function totalExpense(txs) { return txs.reduce((s,t)=>s+t.amount,0); }
 
-// ---- Greetings ----
-const GREETINGS = {
-  morning:   {emoji:'☀️',label:'BON MATIN',   titles:['Une belle journée commence','Prêt à tout noter ?','Bonjour champion !','Nouveau jour, nouveau départ']},
-  noon:      {emoji:'🌤️',label:'MIDI',         titles:['Bon appétit !','Pause bien méritée','Midi à Abidjan 🌴','Tu tiens le rythme !']},
-  afternoon: {emoji:'🌞',label:'APRÈS-MIDI',   titles:['La journée avance','Reste concentré !','Continue comme ça','Tu gères bien !']},
-  evening:   {emoji:'🌅',label:'BONSOIR',      titles:['Belle soirée à toi','Le soleil se couche','Revue de fin de journée','Détends-toi 🌴']},
-  night:     {emoji:'🌙',label:'BONNE NUIT',   titles:['Un dernier coup d\'œil ?','La nuit porte conseil','Dors bien 😴','Demain sera meilleur']},
-};
-const ANECDOTES = {
-  empty:   ['Commence par ajouter ta première dépense 👇','Le plus dur, c\'est de commencer 💪','Prêt à prendre le contrôle de ton argent ?'],
-  great:   ['Tu gères comme un chef ! 👑','Bravo, budget bien maîtrisé 🌿','"Petit à petit, l\'oiseau fait son nid" 🐦','Tes finances sourient ce mois-ci 🎉'],
-  good:    ['Belle maîtrise du budget 👍','Tu avances bien, garde le cap','Le mois se passe bien 😊'],
-  warning: ['Attention, le budget fond vite 🌡️','Tu approches la limite, ralentis un peu','Il est temps de faire attention 👀'],
-  over:    ['Budget dépassé 😅 — le mois prochain sera meilleur !','Pas grave, on repart de zéro 💪','"Qui va doucement va sûrement" 🐢'],
-  nobudget:['Définis ton budget dans les Réglages 🎯','Sans budget, difficile de suivre !','Un budget = la liberté financière 🔑'],
-};
+// ---- Prénom local ----
+const PRENOM_KEY = 'mes_depenses_prenom';
+function getPrenom() { return localStorage.getItem(PRENOM_KEY) || ''; }
+function setPrenom(p) { localStorage.setItem(PRENOM_KEY, p.trim()); }
+function isHassan() { return getPrenom().toLowerCase().includes('hassan'); }
+function isAurore() { return getPrenom().toLowerCase().includes('aurore'); }
+
+// ---- Greetings personnalisés ----
+function getGreetings() {
+  const prenom = getPrenom();
+  const n = prenom ? prenom.split(' ')[0] : '';
+  const h = isHassan(), a = isAurore();
+
+  return {
+    morning: {
+      emoji: '☀️', label: 'BON MATIN',
+      titles: h ? [
+        'Wêh '+n+' ! C\'est parti mon gars 💪',
+        'Eh djo '+n+', nouvelle journée pour tout noter !',
+        n+' le patron est là ! On gère aujourd\'hui',
+        'Allez '+n+' ! Nouvelle journée, nouveau départ',
+      ] : a ? [
+        'Bonjour '+n+' ! Belle journée à toi 🌸',
+        n+' chérie, on commence bien cette journée ✨',
+        'C\'est toi la boss aujourd\'hui '+n+' 👑',
+        'Bonjour '+n+' ! Prête à noter les dépenses ?',
+      ] : n ? [
+        'Bonjour '+n+' ! Belle journée 🌅',
+        n+', c\'est parti pour une nouvelle journée !',
+        'Eh '+n+' ! Nouveau jour, on note tout',
+      ] : [
+        'Wêh ! C\'est parti 💪',
+        'Nouvelle journée, on gère l\'argent !',
+        'Bonjour ! Prêt à tout noter ?',
+      ],
+    },
+    noon: {
+      emoji: '🌤️', label: 'MIDI',
+      titles: h ? [
+        'Hassan, c\'est l\'heure de manger ! 🍽️',
+        'Pause méritée djo ! Bon appétit',
+        'Midi à Abidjan ! Tu tiens le rythme Hassan',
+      ] : a ? [
+        'Aurore, bon appétit ma chérie ! 🌸',
+        'Pause bien méritée Aurore ✨',
+        'Midi ! Tu tiens bien le rythme Aurore',
+      ] : ['Bon appétit ! 🍽️','Pause bien méritée','Midi à Abidjan 🌴'],
+    },
+    afternoon: {
+      emoji: '🌞', label: 'APRÈS-MIDI',
+      titles: h ? [
+        'La journée avance Hassan, continue !',
+        'Eh djo, tu gères bien aujourd\'hui !',
+        'Hassan reste focus ! On est bons',
+      ] : a ? [
+        'La journée avance bien Aurore ✨',
+        'Continue comme ça Aurore, tu gères !',
+        'Aurore est en feu aujourd\'hui 🌸',
+      ] : ['La journée avance, reste focus !','Continue comme ça 💪','Tu gères bien !'],
+    },
+    evening: {
+      emoji: '🌅', label: 'BONSOIR',
+      titles: h ? [
+        'Bonsoir Hassan ! Belle soirée 🌴',
+        'La journée est finie djo, détends-toi',
+        'Hassan a bossé aujourd\'hui ! Repos mérité',
+      ] : a ? [
+        'Bonsoir Aurore ! Belle soirée 🌸',
+        'La journée est finie Aurore, détends-toi ✨',
+        'Aurore a assuré aujourd\'hui ! Repose-toi',
+      ] : ['Bonsoir ! Belle soirée 🌴','Le soleil se couche, détends-toi','Fin de journée, beau travail !'],
+    },
+    night: {
+      emoji: '🌙', label: 'BONNE NUIT',
+      titles: h ? [
+        'Dors bien Hassan 😴',
+        'La nuit porte conseil djo !',
+        'Hassan, dernier coup d\'œil avant de dormir ?',
+      ] : a ? [
+        'Bonne nuit Aurore 🌸',
+        'Dors bien Aurore, demain sera beau ✨',
+        'Aurore, un dernier coup d\'œil ?',
+      ] : ['Bonne nuit 😴','La nuit porte conseil','Dors bien, demain sera meilleur'],
+    },
+  };
+}
+
+// ---- Anecdotes personnalisées ----
+function getAnecdotes(exp, budget, overAmount) {
+  const prenom = getPrenom();
+  const n = prenom ? prenom.split(' ')[0] : '';
+  const h = isHassan(), a = isAurore();
+  const expStr = fmtMoney(overAmount||0);
+
+  return {
+    empty: h ? [
+      'Allez '+n+', rentre ta première dépense là !',
+      'Eh djo '+n+' ! On commence à noter aujourd\'hui',
+      'C\'est parti '+n+' ! Note tout ce que tu dépenses',
+    ] : a ? [
+      'Aurore, commence par ajouter ta première dépense 🌸',
+      n+' chérie, on est prêtes ! Ajoute ta première dépense',
+      'C\'est parti '+n+' ! Note tes dépenses ici',
+    ] : [
+      'Commence par ajouter ta première dépense 👇',
+      'Le plus dur c\'est de commencer, allez !',
+      'Note ta première dépense pour démarrer 💪',
+    ],
+
+    great: h ? [
+      'Wêh '+n+' ! Tu gères ton argent comme un vrai patron 👑',
+      'C\'est toi le chef ici '+n+' ! Le compte sourit',
+      'Gbê ! '+n+' a géré ça proprement ce mois',
+      'Trop fort '+n+' ! Le budget il respire bien 🌿',
+      'Hassan et Aurore gèrent ! Le compte est propre 🎉',
+    ] : a ? [
+      'Bravo '+n+' ! Tu gères le budget comme une pro 👑',
+      n+' a tout maîtrisé ce mois, chapeau ! 🌸',
+      'Wêh '+n+' ! Les finances de la famille sourient 🎉',
+      'Hassan et Aurore gèrent ! Belle équipe 💪',
+      'Trop bien '+n+' ! Le budget respire ce mois ✨',
+    ] : [
+      'Wêh ! Tu gères comme un vrai patron 👑',
+      'La famille gère ! Le compte est propre 🎉',
+      '"Petit à petit, l\'oiseau fait son nid" 🐦',
+      'Trop fort ! Le budget respire bien ce mois 🌿',
+    ],
+
+    good: h ? [
+      'Pas mal '+n+' ! On tient le cap ce mois',
+      'Continue comme ça djo, ça va bien',
+      n+', le mois se passe bien, garde le rythme',
+    ] : a ? [
+      'Bien joué '+n+' ! On tient le cap ce mois ✨',
+      'Continue comme ça '+n+', tu avances bien 🌸',
+      n+', le mois se passe bien !',
+    ] : [
+      'Pas mal ! On tient le cap ce mois',
+      'Continue comme ça, tu avances bien',
+      'Le mois se passe bien, garde le rythme',
+    ],
+
+    warning: h ? [
+      'Doux-doux '+n+' hein ! Le budget il part vite là 🌡️',
+      'Eh djo '+n+' ! Tu approches la limite, calme-toi',
+      n+' mon ami, fais attention, l\'argent fuit 👀',
+      'Ralentis un peu '+n+', sinon fin du mois va faire mal',
+    ] : a ? [
+      'Attention '+n+' chérie ! Le budget fond vite 🌡️',
+      n+', on approche la limite, un peu de prudence ✨',
+      'Doucement '+n+' ! L\'argent part vite là 👀',
+      n+', ralentis un peu sur les dépenses ce mois',
+    ] : [
+      'Doux-doux hein ! Le budget part vite 🌡️',
+      'Attention, on approche la limite 👀',
+      'Ralentis un peu, sinon fin du mois va faire mal',
+    ],
+
+    over: h ? [
+      'Aïe aïe aïe '+n+'... le budget est mort ce mois 😅',
+      'Eh djo '+n+' ! On a trop mangé l\'argent ce mois-ci',
+      n+' a frappé fort ! Dépassement de '+expStr,
+      'C\'est pas grave '+n+', le mois prochain on redresse 💪',
+      '"Qui va doucement va sûrement" — proverbe pour '+n+' 🐢',
+    ] : a ? [
+      'Oups '+n+' ! On a un peu dépassé ce mois 😅',
+      n+', le budget pleure un peu là 🥲',
+      'Pas grave '+n+' chérie ! Dépassement de '+expStr+', on repart 💪',
+      n+', le mois prochain on va mieux gérer ensemble ✨',
+      'C\'est pas grave '+n+' ! On apprend de ça 🌸',
+    ] : [
+      'Aïe ! Le budget est dépassé de '+expStr+' 😅',
+      'Pas grave, le mois prochain sera meilleur 💪',
+      '"Qui va doucement va sûrement" 🐢',
+      'On a dépassé, mais on reste debout !',
+    ],
+
+    nobudget: h ? [
+      n+', définis ton budget dans les Réglages 🎯',
+      'Eh djo '+n+' ! Sans budget c\'est difficile de gérer',
+      'Allez '+n+', mets un budget pour mieux suivre !',
+    ] : a ? [
+      n+' chérie, définis ton budget dans les Réglages 🎯',
+      n+', sans budget c\'est difficile ! Lance-toi ✨',
+      'Mets un budget '+n+', ça va tout changer 🌸',
+    ] : [
+      'Définis ton budget dans les Réglages 🎯',
+      'Sans budget, difficile de suivre !',
+      'Un budget = la liberté financière 🔑',
+    ],
+  };
+}
+
 function getTimeOfDay() {
   const h=new Date().getHours();
   if(h<6)return'night';if(h<12)return'morning';if(h<14)return'noon';if(h<18)return'afternoon';if(h<22)return'evening';return'night';
 }
 
 function renderGreeting() {
-  const tod=getTimeOfDay(), g=GREETINGS[tod];
-  $('#greetingTime').textContent=g.emoji+' '+g.label;
-  $('#greetingTitle').textContent=pickRandom(g.titles);
+  const tod = getTimeOfDay();
+  const GREETINGS = getGreetings();
+  const g = GREETINGS[tod];
+  $('#greetingTime').textContent = g.emoji+' '+g.label;
+  $('#greetingTitle').textContent = pickRandom(g.titles);
+
   const txs=txOfMonth(currentMonth), exp=totalExpense(txs), budget=state.settings.monthlyBudget||0;
+  const overAmount = budget ? Math.max(0, exp-budget) : 0;
+  const ANECDOTES = getAnecdotes(exp, budget, overAmount);
+
   let pool;
-  if(!txs.length) pool=ANECDOTES.empty;
-  else if(!budget) pool=ANECDOTES.nobudget;
-  else if(exp>budget) pool=ANECDOTES.over;
-  else if(exp>budget*.8) pool=ANECDOTES.warning;
-  else if(exp<budget*.5) pool=ANECDOTES.great;
-  else pool=ANECDOTES.good;
-  $('#greetingAnecdote').textContent=pickRandom(pool);
+  if(!txs.length)         pool = ANECDOTES.empty;
+  else if(!budget)        pool = ANECDOTES.nobudget;
+  else if(exp>budget)     pool = ANECDOTES.over;
+  else if(exp>budget*.8)  pool = ANECDOTES.warning;
+  else if(exp<budget*.5)  pool = ANECDOTES.great;
+  else                    pool = ANECDOTES.good;
+
+  $('#greetingAnecdote').textContent = pickRandom(pool);
+
+  // Couleur hero selon état budget
+  const hero = document.querySelector('.hero-card');
+  if(hero) {
+    if(budget && exp>budget) {
+      hero.style.background = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 50%, #7f1d1d 100%)';
+    } else if(budget && exp>budget*.8) {
+      hero.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #92400e 100%)';
+    } else if(budget && exp<budget*.5 && txs.length>0) {
+      hero.style.background = 'linear-gradient(135deg, #22c55e 0%, #15803d 50%, #14532d 100%)';
+    } else {
+      hero.style.background = '';
+    }
+  }
 }
 
 // ---- Dashboard ----
@@ -286,7 +484,17 @@ function renderDashboard() {
   $('#heroProgressFill').style.width=pct+'%';
   $('#heroProgressPct').textContent=budget?Math.round(pct)+'%':'—';
   $('#sumExpense').textContent=fmtShort(exp);
-  $('#sumBudget').textContent=budget?fmtShort(Math.max(0,budget-exp)):'—';
+
+  // Budget restant ou depassement
+  const budgetCard=document.querySelector('.stat-card.stat-green');
+  if(budget && exp>budget) {
+    const over=exp-budget;
+    $('#sumBudget').textContent='-'+fmtShort(over);
+    if(budgetCard){budgetCard.style.background='linear-gradient(135deg,#ef4444,#b91c1c)';budgetCard.querySelector('.stat-icon').textContent='🚨';budgetCard.querySelector('.stat-label').textContent='Depassement';}
+  } else {
+    $('#sumBudget').textContent=budget?fmtShort(Math.max(0,budget-exp)):'—';
+    if(budgetCard){budgetCard.style.background='';budgetCard.querySelector('.stat-icon').textContent='🎯';budgetCard.querySelector('.stat-label').textContent='Restant';}
+  }
 
   const [y,m]=currentMonth.split('-').map(Number);
   const now=new Date();
@@ -401,6 +609,35 @@ function renderStats() {
   const yearTxs=state.transactions.filter(t=>t.date.startsWith(String(y)+'-'));
   $('#yearlyTotal').textContent=fmtMoney(totalExpense(yearTxs));
   $('#yearlyText').textContent=String(y)+' · '+yearTxs.length+' transaction'+(yearTxs.length>1?'s':'');
+
+  // Historique depassements 6 derniers mois
+  renderBudgetHistory(months, y, m);
+}
+
+function renderBudgetHistory(months, y, m) {
+  const budget=state.settings.monthlyBudget||0;
+  const el=$('#budgetHistory');
+  if(!el) return;
+  if(!budget) { el.innerHTML='<p class="muted small" style="text-align:center;padding:12px">Definis un budget dans les Reglages pour voir l'historique</p>'; return; }
+
+  el.innerHTML=months.map(ym=>{
+    const exp=totalExpense(txOfMonth(ym));
+    const over=exp-budget;
+    const isOver=over>0;
+    const pct=Math.min(100,(exp/budget)*100);
+    const label=prettyMonth(ym).replace(/ \d{4}$/,'');
+    const isCurrent=ym===currentMonth;
+    return '<div class="budget-hist-row">'+
+      '<span class="budget-hist-month'+(isCurrent?' current':'')+'">'+(isCurrent?'📍 ':'')+label+'</span>'+
+      '<div class="budget-hist-bar-wrap">'+
+        '<div class="budget-hist-bar"><div class="budget-hist-fill" style="width:'+Math.min(100,pct).toFixed(0)+'%;background:'+(isOver?'#ef4444':pct>80?'#f59e0b':'#22c55e')+'"></div></div>'+
+      '</div>'+
+      '<span class="budget-hist-amount '+(isOver?'over':'ok')+'">'+
+        (isOver ? '−'+fmtMoney(over) : '+'+fmtMoney(Math.max(0,budget-exp)))+
+      '</span>'+
+      '<span class="budget-hist-icon">'+(isOver?'🔴':'✅')+'</span>'+
+    '</div>';
+  }).join('');
 }
 
 // ---- Settings ----
@@ -409,6 +646,13 @@ function renderSettings() {
   $('#budgetInput').value=budget||'';
   $('#budgetCurrent').textContent=budget?'💰 Budget actuel : '+fmtMoney(budget):'';
   $('#familyCodeDisplay').textContent=familyCode||'—';
+
+  // Prenom
+  const prenomInput=$('#prenomInput');
+  if(prenomInput && !prenomInput.dataset.filled) {
+    prenomInput.value=getPrenom();
+    prenomInput.dataset.filled='1';
+  }
 
   $('#categoryList').innerHTML=state.categories.map(c=>
     '<li data-cat-id="'+c.id+'">'+
@@ -624,6 +868,14 @@ function bindEvents() {
   $('#clearData').addEventListener('click',clearAllData);
 
   // Code famille
+  // Prenom
+  document.addEventListener('click', e=>{
+    if(e.target.id==='savePrenomBtn') {
+      const v=$('#prenomInput')?.value?.trim();
+      if(v) { setPrenom(v); toast('✅ Bonjour '+v+' ! 👋'); renderDashboard(); }
+    }
+  });
+
   $('#copyCodeBtn').addEventListener('click',()=>{
     navigator.clipboard?.writeText(familyCode).then(()=>toast('✅ Code copié : '+familyCode)).catch(()=>toast('Code : '+familyCode));
   });
