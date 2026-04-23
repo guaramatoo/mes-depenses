@@ -627,7 +627,7 @@ function renderBudgetHistory(months, y, m) {
   const budget=state.settings.monthlyBudget||0;
   const el=$('#budgetHistory');
   if(!el) return;
-  if(!budget) { el.innerHTML='<p class="muted small" style="text-align:center;padding:12px">Definis un budget dans les Reglages pour voir l'historique</p>'; return; }
+  if(!budget) { el.innerHTML='<p class="muted small" style="text-align:center;padding:12px">Definis un budget dans les Reglages pour voir l\'historique</p>'; return; }
 
   el.innerHTML=months.map(ym=>{
     const exp=totalExpense(txOfMonth(ym));
@@ -938,7 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       if (!window.__firebase) {
         const hint = document.getElementById('loginHint');
-        if (hint) hint.textContent = '⚠️ Connexion internet requise pour utiliser l'app';
+        if (hint) hint.textContent = '⚠️ Connexion internet requise pour utiliser l\'app';
       }
     }, 6000);
   }
