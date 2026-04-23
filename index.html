@@ -14,234 +14,222 @@
 </head>
 <body>
 
-  <!-- HEADER -->
-  <header class="app-header">
-    <button class="icon-btn" id="prevMonth">‹</button>
-    <div class="header-title">
-      <h1 id="currentMonthLabel">—</h1>
-      <p id="headerSubtitle" class="muted">Mes dépenses</p>
+  <!-- ÉCRAN DE CONNEXION -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">💸</div>
+      <h1 class="login-title">Mes Dépenses</h1>
+      <p class="login-sub">Entrez votre code famille pour accéder à vos données partagées</p>
+      <div class="login-input-wrap">
+        <input type="text" id="loginCode" placeholder="Code famille (ex: ABCD-1234)"
+          maxlength="9" style="text-transform:uppercase;letter-spacing:3px;text-align:center;font-size:20px;font-weight:700" />
+      </div>
+      <button class="primary-btn" id="loginBtn">🚀 Accéder</button>
+      <div class="login-divider">ou</div>
+      <button class="secondary-btn" id="newFamilyBtn">✨ Créer un nouveau code famille</button>
+      <p class="login-hint" id="loginHint"></p>
     </div>
-    <button class="icon-btn" id="nextMonth">›</button>
-  </header>
+  </div>
 
-  <main id="main">
+  <!-- APP PRINCIPALE -->
+  <div id="appMain" hidden>
 
-    <!-- ===== DASHBOARD ===== -->
-    <section class="view active" id="view-dashboard">
+    <!-- HEADER -->
+    <header class="app-header">
+      <button class="icon-btn" id="prevMonth">‹</button>
+      <div class="header-title">
+        <h1 id="currentMonthLabel">—</h1>
+        <p id="headerSubtitle" class="muted">Mes dépenses</p>
+      </div>
+      <button class="icon-btn" id="nextMonth">›</button>
+    </header>
 
-      <!-- Hero greeting -->
-      <div class="hero-card">
-        <div class="hero-bg"></div>
-        <div class="hero-content">
-          <p class="hero-time" id="greetingTime">☀️ BON MATIN</p>
-          <h2 class="hero-title" id="greetingTitle">Bonne journée !</h2>
-          <p class="hero-anecdote" id="greetingAnecdote">Chaque FCFA compte 💪</p>
-        </div>
-        <div class="hero-amount-wrap">
-          <p class="hero-amount-label">Dépensé ce mois</p>
-          <p class="hero-amount" id="heroExpense">0 FCFA</p>
-          <div class="hero-progress-wrap">
-            <div class="hero-progress-bar">
-              <div class="hero-progress-fill" id="heroProgressFill"></div>
+    <!-- Indicateur sync temps réel -->
+    <div class="sync-bar" id="syncBar">
+      <span class="sync-bar-dot" id="syncBarDot"></span>
+      <span id="syncBarText">Connexion…</span>
+      <span class="sync-bar-code" id="syncBarCode"></span>
+    </div>
+
+    <main id="main">
+
+      <!-- DASHBOARD -->
+      <section class="view active" id="view-dashboard">
+
+        <div class="hero-card">
+          <div class="hero-bg"></div>
+          <div class="hero-content">
+            <p class="hero-time" id="greetingTime">☀️ BON MATIN</p>
+            <h2 class="hero-title" id="greetingTitle">Bonne journée !</h2>
+            <p class="hero-anecdote" id="greetingAnecdote">Chaque FCFA compte 💪</p>
+          </div>
+          <div class="hero-amount-wrap">
+            <p class="hero-amount-label">Dépensé ce mois</p>
+            <p class="hero-amount" id="heroExpense">0 FCFA</p>
+            <div class="hero-progress-wrap">
+              <div class="hero-progress-bar">
+                <div class="hero-progress-fill" id="heroProgressFill"></div>
+              </div>
+              <span class="hero-progress-pct" id="heroProgressPct">—</span>
             </div>
-            <span class="hero-progress-pct" id="heroProgressPct">—</span>
           </div>
         </div>
-      </div>
 
-      <!-- 3 cartes colorées -->
-      <div class="stat-row">
-        <div class="stat-card stat-red">
-          <div class="stat-icon">💸</div>
-          <div class="stat-info">
-            <p class="stat-label">Dépenses</p>
-            <p class="stat-val" id="sumExpense">0</p>
+        <div class="stat-row">
+          <div class="stat-card stat-red">
+            <div class="stat-icon">💸</div>
+            <div class="stat-info">
+              <p class="stat-label">Dépenses</p>
+              <p class="stat-val" id="sumExpense">0</p>
+            </div>
+          </div>
+          <div class="stat-card stat-green">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-info">
+              <p class="stat-label">Restant</p>
+              <p class="stat-val" id="sumBudget">—</p>
+            </div>
+          </div>
+          <div class="stat-card stat-blue">
+            <div class="stat-icon">📅</div>
+            <div class="stat-info">
+              <p class="stat-label">Moy/jour</p>
+              <p class="stat-val" id="sumDailyAvg">0</p>
+            </div>
           </div>
         </div>
-        <div class="stat-card stat-green">
-          <div class="stat-icon">🎯</div>
-          <div class="stat-info">
-            <p class="stat-label">Budget restant</p>
-            <p class="stat-val" id="sumBudget">—</p>
+
+        <div class="card">
+          <div class="card-header"><h2>📊 Par catégorie</h2></div>
+          <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+          <div id="categoryLegend" class="legend"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>📈 Évolution 6 mois</h2></div>
+          <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>🕒 Dernières dépenses</h2>
+            <button class="link-btn" data-nav="transactions">Tout voir</button>
+          </div>
+          <ul class="tx-list" id="recentTx"></ul>
+        </div>
+
+      </section>
+
+      <!-- TRANSACTIONS -->
+      <section class="view" id="view-transactions">
+        <div class="filters">
+          <input type="search" id="searchInput" placeholder="🔍 Rechercher…" />
+          <select id="filterCategory"><option value="">Toutes catégories</option></select>
+        </div>
+        <div id="txGroups"></div>
+        <p class="empty" id="txEmpty" hidden>😶 Aucune dépense ce mois-ci.</p>
+      </section>
+
+      <!-- STATS -->
+      <section class="view" id="view-stats">
+        <div class="card">
+          <div class="card-header"><h2>🏆 Top catégories</h2></div>
+          <ul class="ranking" id="topCategories"></ul>
+        </div>
+        <div class="card stats-highlight-card">
+          <p class="stats-highlight-label">💰 Moyenne journalière</p>
+          <p class="stats-highlight-num" id="dailyAverage">0 FCFA</p>
+          <p class="muted small" id="dailyAverageText"></p>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>📅 Comparaison mensuelle</h2></div>
+          <div class="chart-wrap"><canvas id="compareChart"></canvas></div>
+        </div>
+        <div class="card stats-highlight-card stat-annual">
+          <p class="stats-highlight-label">🗓️ Total annuel</p>
+          <p class="stats-highlight-num" id="yearlyTotal">0 FCFA</p>
+          <p class="muted small" id="yearlyText"></p>
+        </div>
+      </section>
+
+      <!-- RÉGLAGES -->
+      <section class="view" id="view-settings">
+
+        <!-- Code famille actuel -->
+        <div class="card family-card">
+          <div class="family-icon">👨‍👩‍👧</div>
+          <h2 class="family-title">Votre famille</h2>
+          <p class="family-code" id="familyCodeDisplay">—</p>
+          <p class="muted small" style="text-align:center;margin-top:6px">Partagez ce code avec votre partenaire pour voir les mêmes données</p>
+          <button class="secondary-btn" id="copyCodeBtn">📋 Copier le code</button>
+          <button class="danger-btn" id="logoutBtn">🚪 Changer de code famille</button>
+        </div>
+
+        <!-- Budget -->
+        <div class="card budget-setup-card">
+          <div class="budget-setup-icon">🎯</div>
+          <h2 class="budget-setup-title">Mon budget mensuel</h2>
+          <p class="budget-setup-sub">Définis combien vous pouvez dépenser ce mois</p>
+          <input type="number" id="budgetInput" inputmode="numeric" min="0" step="1000" placeholder="Ex : 150 000 FCFA" />
+          <button class="primary-btn" id="saveBudget">💾 Enregistrer le budget</button>
+          <p class="budget-setup-current" id="budgetCurrent"></p>
+        </div>
+
+        <!-- Catégories -->
+        <div class="card">
+          <div class="card-header">
+            <h2>🏷️ Catégories</h2>
+            <button class="link-btn" id="addCategoryBtn">+ Ajouter</button>
+          </div>
+          <ul class="cat-list" id="categoryList"></ul>
+        </div>
+
+        <!-- Thème -->
+        <div class="card">
+          <div class="card-header"><h2>🎨 Thème</h2></div>
+          <div class="theme-row">
+            <button class="theme-btn" data-theme="auto">🌓 Auto</button>
+            <button class="theme-btn" data-theme="light">☀️ Clair</button>
+            <button class="theme-btn" data-theme="dark">🌙 Sombre</button>
           </div>
         </div>
-        <div class="stat-card stat-blue">
-          <div class="stat-icon">📅</div>
-          <div class="stat-info">
-            <p class="stat-label">Moy/jour</p>
-            <p class="stat-val" id="sumDailyAvg">0</p>
-          </div>
+
+        <!-- Données -->
+        <div class="card">
+          <div class="card-header"><h2>📁 Données</h2></div>
+          <button class="secondary-btn" id="exportCsv">⬇️ Exporter (CSV)</button>
+          <button class="danger-btn" id="clearData">🗑️ Tout effacer</button>
         </div>
-      </div>
 
-      <!-- Par catégorie -->
-      <div class="card">
-        <div class="card-header">
-          <h2>📊 Par catégorie</h2>
+        <div class="card">
+          <div class="card-header"><h2>ℹ️ À propos</h2></div>
+          <p class="muted small">Mes Dépenses v5 — Sync temps réel Firebase 🔥</p>
+          <p class="muted small">Devise : FCFA 🇨🇮 · Données stockées en sécurité</p>
         </div>
-        <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
-        <div id="categoryLegend" class="legend"></div>
-      </div>
 
-      <!-- Évolution -->
-      <div class="card">
-        <div class="card-header"><h2>📈 Évolution 6 mois</h2></div>
-        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
-      </div>
+      </section>
+    </main>
 
-      <!-- Dernières transactions -->
-      <div class="card">
-        <div class="card-header">
-          <h2>🕒 Dernières dépenses</h2>
-          <button class="link-btn" data-nav="transactions">Tout voir</button>
-        </div>
-        <ul class="tx-list" id="recentTx"></ul>
-      </div>
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-nav="dashboard">
+        <span class="nav-icon">🏠</span><span class="nav-label">Accueil</span>
+      </button>
+      <button class="nav-btn" data-nav="transactions">
+        <span class="nav-icon">📋</span><span class="nav-label">Historique</span>
+      </button>
+      <button class="nav-btn fab" id="openAdd">
+        <span class="plus">+</span>
+      </button>
+      <button class="nav-btn" data-nav="stats">
+        <span class="nav-icon">📊</span><span class="nav-label">Stats</span>
+      </button>
+      <button class="nav-btn" data-nav="settings">
+        <span class="nav-icon">⚙️</span><span class="nav-label">Réglages</span>
+      </button>
+    </nav>
 
-    </section>
-
-    <!-- ===== TRANSACTIONS ===== -->
-    <section class="view" id="view-transactions">
-      <div class="filters">
-        <input type="search" id="searchInput" placeholder="🔍 Rechercher…" />
-        <select id="filterCategory"><option value="">Toutes catégories</option></select>
-      </div>
-      <div id="txGroups"></div>
-      <p class="empty" id="txEmpty" hidden>😶 Aucune dépense ce mois-ci.</p>
-    </section>
-
-    <!-- ===== STATS ===== -->
-    <section class="view" id="view-stats">
-      <div class="card">
-        <div class="card-header"><h2>🏆 Top catégories</h2></div>
-        <ul class="ranking" id="topCategories"></ul>
-      </div>
-      <div class="card stats-highlight-card">
-        <p class="stats-highlight-label">💰 Moyenne journalière</p>
-        <p class="stats-highlight-num" id="dailyAverage">0 FCFA</p>
-        <p class="muted small" id="dailyAverageText"></p>
-      </div>
-      <div class="card">
-        <div class="card-header"><h2>📅 Comparaison mensuelle</h2></div>
-        <div class="chart-wrap"><canvas id="compareChart"></canvas></div>
-      </div>
-      <div class="card stats-highlight-card stat-annual">
-        <p class="stats-highlight-label">🗓️ Total annuel des dépenses</p>
-        <p class="stats-highlight-num" id="yearlyTotal">0 FCFA</p>
-        <p class="muted small" id="yearlyText"></p>
-      </div>
-    </section>
-
-    <!-- ===== RÉGLAGES ===== -->
-    <section class="view" id="view-settings">
-
-      <!-- Budget mensuel -->
-      <div class="card budget-setup-card">
-        <div class="budget-setup-icon">🎯</div>
-        <h2 class="budget-setup-title">Mon budget mensuel</h2>
-        <p class="budget-setup-sub">Définis combien tu peux dépenser ce mois</p>
-        <input type="number" id="budgetInput" inputmode="numeric" min="0" step="1000" placeholder="Ex : 150 000 FCFA" />
-        <button class="primary-btn" id="saveBudget">💾 Enregistrer le budget</button>
-        <p class="budget-setup-current" id="budgetCurrent"></p>
-      </div>
-
-      <!-- Catégories -->
-      <div class="card">
-        <div class="card-header">
-          <h2>🏷️ Catégories</h2>
-          <button class="link-btn" id="addCategoryBtn">+ Ajouter</button>
-        </div>
-        <ul class="cat-list" id="categoryList"></ul>
-      </div>
-
-      <!-- Thème -->
-      <div class="card">
-        <div class="card-header"><h2>🎨 Thème</h2></div>
-        <div class="theme-row">
-          <button class="theme-btn" data-theme="auto">🌓 Auto</button>
-          <button class="theme-btn" data-theme="light">☀️ Clair</button>
-          <button class="theme-btn" data-theme="dark">🌙 Sombre</button>
-        </div>
-      </div>
-
-      <!-- Sync -->
-      <div class="card sync-card">
-        <div class="card-header">
-          <h2>🔄 Synchronisation</h2>
-          <span class="sync-platform-badge" id="syncPlatformBadge">—</span>
-        </div>
-        <div class="sync-status-bar">
-          <span class="sync-dot" id="syncDot"></span>
-          <span class="sync-status-text" id="syncStatusText">Chargement…</span>
-        </div>
-        <div class="sync-device-row">
-          <label class="sync-label">📱 Nom de cet appareil</label>
-          <div class="sync-device-edit">
-            <input type="text" id="deviceNameInput" placeholder="Ex : iPhone de Marie" maxlength="30" />
-            <button class="sync-save-btn" id="saveDeviceName">✓</button>
-          </div>
-        </div>
-        <div class="sync-family-row">
-          <label class="sync-label">👨‍👩‍👧 Code famille <span class="sync-hint">(optionnel)</span></label>
-          <div class="sync-device-edit">
-            <input type="text" id="familyKeyInput" placeholder="Ex : ABCD-1234" maxlength="9" style="text-transform:uppercase;letter-spacing:2px" />
-            <button class="sync-save-btn" id="saveFamilyKey">✓</button>
-            <button class="sync-gen-btn" id="genFamilyKey">🎲</button>
-          </div>
-          <p class="muted small" style="margin-top:6px">Même code = fusion facile entre membres.</p>
-        </div>
-        <div class="sync-actions">
-          <button class="sync-btn-save" id="cloudSave">
-            <span class="sync-btn-icon">📤</span>
-            <span class="sync-btn-text"><strong>Sauvegarder</strong><small id="syncSaveHint">vers le cloud</small></span>
-          </button>
-          <label class="sync-btn-restore">
-            <span class="sync-btn-icon">📥</span>
-            <span class="sync-btn-text"><strong>Restaurer</strong><small>depuis le cloud</small></span>
-            <input type="file" id="cloudRestore" accept="application/json" hidden />
-          </label>
-        </div>
-        <button class="sync-guide-toggle" id="syncGuideToggle">ℹ️ Comment sync sur <span id="syncPlatformName">cet appareil</span> ?</button>
-        <div class="sync-guide" id="syncGuide" hidden><ol id="syncGuideSteps"></ol></div>
-        <p class="sync-last-time" id="lastSyncText">Jamais synchronisé</p>
-      </div>
-
-      <!-- Données -->
-      <div class="card">
-        <div class="card-header"><h2>📁 Données</h2></div>
-        <button class="secondary-btn" id="exportJson">⬇️ Exporter (JSON)</button>
-        <button class="secondary-btn" id="exportCsv">⬇️ Exporter (CSV)</button>
-        <label class="secondary-btn file-label">⬆️ Importer (JSON)<input type="file" id="importJson" accept="application/json" hidden /></label>
-        <button class="danger-btn" id="clearData">🗑️ Tout effacer</button>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><h2>ℹ️ À propos</h2></div>
-        <p class="muted small">Mes Dépenses — PWA v4. Toutes tes données restent sur ton appareil.</p>
-        <p class="muted small">Version 4.0 · Devise : FCFA 🇨🇮</p>
-      </div>
-
-    </section>
-  </main>
-
-  <!-- BOTTOM NAV -->
-  <nav class="bottom-nav">
-    <button class="nav-btn active" data-nav="dashboard">
-      <span class="nav-icon">🏠</span><span class="nav-label">Accueil</span>
-    </button>
-    <button class="nav-btn" data-nav="transactions">
-      <span class="nav-icon">📋</span><span class="nav-label">Historique</span>
-    </button>
-    <button class="nav-btn fab" id="openAdd">
-      <span class="plus">+</span>
-    </button>
-    <button class="nav-btn" data-nav="stats">
-      <span class="nav-icon">📊</span><span class="nav-label">Stats</span>
-    </button>
-    <button class="nav-btn" data-nav="settings">
-      <span class="nav-icon">⚙️</span><span class="nav-label">Réglages</span>
-    </button>
-  </nav>
+  </div><!-- fin appMain -->
 
   <!-- MODAL: AJOUTER DÉPENSE -->
   <div class="modal" id="txModal" hidden>
@@ -253,29 +241,21 @@
       </div>
       <form id="txForm" autocomplete="off">
         <input type="hidden" id="txId" />
-
-        <!-- Montant grande saisie -->
         <div class="amount-input-wrap">
           <span class="amount-currency">FCFA</span>
           <input type="number" id="txAmount" inputmode="numeric" min="0" step="1" required placeholder="0" class="amount-big-input" />
         </div>
-
-        <!-- Catégories rapides -->
         <label class="form-label">Catégorie</label>
         <div id="catQuickPick" class="cat-quick-grid"></div>
         <input type="hidden" id="txCategory" required />
-
         <label class="form-label">Date</label>
         <input type="date" id="txDate" required />
-
         <label class="form-label">Description <span class="form-optional">(optionnel)</span></label>
         <input type="text" id="txDescription" placeholder="Ex : Marché de Treichville" maxlength="100" />
-
         <label class="check-row">
           <input type="checkbox" id="txRecurring" />
           <span>🔁 Se répète chaque mois</span>
         </label>
-
         <div class="modal-actions">
           <button type="button" class="danger-btn" id="deleteTx" hidden>Supprimer</button>
           <button type="submit" class="primary-btn">✅ Enregistrer</button>
@@ -308,23 +288,29 @@
     </div>
   </div>
 
-  <!-- MODAL SYNC -->
-  <div class="modal" id="syncModal" hidden>
-    <div class="modal-sheet">
-      <div class="modal-drag-handle"></div>
-      <div class="modal-header">
-        <h2>🔄 Synchronisation</h2>
-        <button class="icon-btn" id="closeSyncModal">✕</button>
-      </div>
-      <div id="syncModalContent"></div>
-      <div id="syncModalActions"></div>
-    </div>
-  </div>
-
   <div id="toast" class="toast" hidden></div>
 
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDtgoPLnmqnkM0FNPtZN6XvWWP7VLUGo3Y",
+      authDomain: "mes-06031994.firebaseapp.com",
+      projectId: "mes-06031994",
+      storageBucket: "mes-06031994.firebasestorage.app",
+      messagingSenderId: "783005352825",
+      appId: "1:783005352825:web:d2b840a21b58b7d4cc25a8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.__firebase = { db, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc, updateDoc };
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="sync.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
