@@ -608,3 +608,22 @@ input:focus,select:focus{border-color:var(--terracotta);box-shadow:0 0 0 3px rgb
 .budget-hist-amount.over {color:#ef4444}
 .budget-hist-amount.ok   {color:#22c55e}
 .budget-hist-icon {font-size:14px;flex-shrink:0}
+
+/* ===== CATEGORY LOCK ===== */
+.cat-lock {
+  font-size: 14px;
+  opacity: 0.5;
+  margin-left: auto;
+  padding: 4px 8px;
+}
+.cat-lock-msg {
+  background: var(--gold-light);
+  border: 1px solid rgba(212,148,10,.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: 500;
+  margin-bottom: 4px;
+  line-height: 1.45;
+}

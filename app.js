@@ -8,16 +8,16 @@ const LOCAL_KEY   = 'mes_depenses_family';
 const THEME_KEY   = 'mes_depenses_theme';
 
 const defaultCategories = [
-  { id:'cat-food',      name:'Alimentation', icon:'🍽️', color:'#f97316' },
-  { id:'cat-transport', name:'Transport',    icon:'🚗', color:'#3b82f6' },
-  { id:'cat-rent',      name:'Loyer',        icon:'🏠', color:'#8b5cf6' },
-  { id:'cat-bills',     name:'Factures',     icon:'💡', color:'#eab308' },
-  { id:'cat-health',    name:'Santé',        icon:'💊', color:'#ef4444' },
-  { id:'cat-leisure',   name:'Loisirs',      icon:'🎮', color:'#ec4899' },
-  { id:'cat-edu',       name:'Éducation',    icon:'📚', color:'#06b6d4' },
-  { id:'cat-clothes',   name:'Vêtements',    icon:'👕', color:'#14b8a6' },
-  { id:'cat-family',    name:'Famille',      icon:'👨‍👩‍👧', color:'#a855f7' },
-  { id:'cat-other',     name:'Autre',        icon:'📦', color:'#64748b' },
+  { id:'cat-food',      name:'Alimentation', icon:'🍽️', color:'#f97316', locked:true },
+  { id:'cat-transport', name:'Transport',    icon:'🚗', color:'#3b82f6', locked:true },
+  { id:'cat-rent',      name:'Loyer',        icon:'🏠', color:'#8b5cf6', locked:true },
+  { id:'cat-bills',     name:'Factures',     icon:'💡', color:'#eab308', locked:true },
+  { id:'cat-health',    name:'Santé',        icon:'💊', color:'#ef4444', locked:true },
+  { id:'cat-leisure',   name:'Loisirs',      icon:'🎮', color:'#ec4899', locked:true },
+  { id:'cat-edu',       name:'Éducation',    icon:'📚', color:'#06b6d4', locked:true },
+  { id:'cat-clothes',   name:'Vêtements',    icon:'👕', color:'#14b8a6', locked:true },
+  { id:'cat-family',    name:'Famille',      icon:'👨‍👩‍👧', color:'#a855f7', locked:true },
+  { id:'cat-other',     name:'Autre',        icon:'📦', color:'#64748b', locked:true },
 ];
 
 // ---- État local (miroir Firestore) ----
@@ -667,9 +667,15 @@ function renderSettings() {
     '<li data-cat-id="'+c.id+'">'+
     '<div class="cat-icon" style="background:'+c.color+'22;color:'+c.color+'">'+c.icon+'</div>'+
     '<span class="cat-name">'+escHtml(c.name)+'</span>'+
-    '<button class="cat-edit">Modifier</button></li>'
+    (c.locked ? '<span class="cat-lock">🔒</span>' : '<button class="cat-edit">Modifier</button>')+
+    '</li>'
   ).join('');
-  $('#categoryList').querySelectorAll('li').forEach(li=>li.querySelector('.cat-edit').addEventListener('click',()=>openCatModal(li.dataset.catId)));
+  // Attacher les listeners seulement sur celles sans lock
+  $('#categoryList').querySelectorAll('li').forEach(li=>{
+    const editBtn=li.querySelector('.cat-edit');
+    if(editBtn) editBtn.addEventListener('click',()=>openCatModal(li.dataset.catId));
+  });
+
   applyTheme();
 }
 
@@ -744,12 +750,17 @@ function closeTxModal() { $('#txModal').hidden=true; }
 
 function openCatModal(catId) {
   const existing=catId?state.categories.find(c=>c.id===catId):null;
+  const isLocked=existing?.locked===true;
   $('#catId').value=existing?.id||'';
   $('#catName').value=existing?.name||'';
   $('#catIcon').value=existing?.icon||'📦';
   $('#catColor').value=existing?.color||'#c4532b';
-  $('#catModalTitle').textContent=existing?'✏️ Modifier':'🏷️ Nouvelle catégorie';
-  $('#deleteCat').hidden=!existing;
+  $('#catModalTitle').textContent=existing?(isLocked?'🔒 Modifier la catégorie':'✏️ Modifier'):'🏷️ Nouvelle catégorie';
+  // Cacher Supprimer si catégorie par défaut (locked)
+  $('#deleteCat').hidden=!existing||isLocked;
+  // Afficher un badge si locked
+  const lockMsg=$('#catLockMsg');
+  if(lockMsg) lockMsg.hidden=!isLocked;
   $('#catModal').hidden=false;
 }
 
@@ -771,6 +782,9 @@ async function saveCategory(e) {
 async function deleteCategory() {
   const id=$('#catId').value;
   if(!id) return;
+  // Protection : ne jamais supprimer une catégorie par défaut
+  const cat=state.categories.find(c=>c.id===id);
+  if(cat?.locked) { toast('🔒 Cette catégorie ne peut pas être supprimée'); return; }
   const used=state.transactions.some(t=>t.categoryId===id);
   if(!confirm(used?'Cette catégorie a des dépenses. Continuer ?':'Supprimer cette catégorie ?')) return;
   try {
