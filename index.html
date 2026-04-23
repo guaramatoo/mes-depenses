@@ -14,154 +14,166 @@
 </head>
 <body>
 
-  <!-- ========== HEADER ========== -->
+  <!-- HEADER -->
   <header class="app-header">
-    <button class="icon-btn" id="prevMonth" aria-label="Mois précédent">‹</button>
+    <button class="icon-btn" id="prevMonth">‹</button>
     <div class="header-title">
       <h1 id="currentMonthLabel">—</h1>
       <p id="headerSubtitle" class="muted">Mes dépenses</p>
     </div>
-    <button class="icon-btn" id="nextMonth" aria-label="Mois suivant">›</button>
+    <button class="icon-btn" id="nextMonth">›</button>
   </header>
 
-  <!-- ========== MAIN VIEWS ========== -->
   <main id="main">
 
-    <!-- DASHBOARD -->
+    <!-- ===== DASHBOARD ===== -->
     <section class="view active" id="view-dashboard">
 
-      <!-- HERO : salutation + anecdote -->
-      <div class="greeting-hero">
-        <div class="greeting-time" id="greetingTime">☀️ Bonjour</div>
-        <h2 class="greeting-title" id="greetingTitle">Comment ça va aujourd'hui ?</h2>
-        <p class="greeting-anecdote" id="greetingAnecdote">Chaque FCFA compte — bienvenue !</p>
-      </div>
-
-      <div class="summary-grid">
-        <div class="card card-expense" data-emoji="💸">
-          <span class="card-label">Dépenses</span>
-          <span class="card-amount" id="sumExpense">0</span>
+      <!-- Hero greeting -->
+      <div class="hero-card">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+          <p class="hero-time" id="greetingTime">☀️ BON MATIN</p>
+          <h2 class="hero-title" id="greetingTitle">Bonne journée !</h2>
+          <p class="hero-anecdote" id="greetingAnecdote">Chaque FCFA compte 💪</p>
         </div>
-        <div class="card card-income" data-emoji="💰">
-          <span class="card-label">Revenus</span>
-          <span class="card-amount" id="sumIncome">0</span>
-        </div>
-        <div class="card card-balance" data-emoji="⚖️">
-          <span class="card-label">Solde</span>
-          <span class="card-amount" id="sumBalance">0</span>
-        </div>
-        <div class="card card-budget" data-emoji="🎯">
-          <span class="card-label">Budget restant</span>
-          <span class="card-amount" id="sumBudget">0</span>
+        <div class="hero-amount-wrap">
+          <p class="hero-amount-label">Dépensé ce mois</p>
+          <p class="hero-amount" id="heroExpense">0 FCFA</p>
+          <div class="hero-progress-wrap">
+            <div class="hero-progress-bar">
+              <div class="hero-progress-fill" id="heroProgressFill"></div>
+            </div>
+            <span class="hero-progress-pct" id="heroProgressPct">—</span>
+          </div>
         </div>
       </div>
 
+      <!-- 3 cartes colorées -->
+      <div class="stat-row">
+        <div class="stat-card stat-red">
+          <div class="stat-icon">💸</div>
+          <div class="stat-info">
+            <p class="stat-label">Dépenses</p>
+            <p class="stat-val" id="sumExpense">0</p>
+          </div>
+        </div>
+        <div class="stat-card stat-green">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-info">
+            <p class="stat-label">Budget restant</p>
+            <p class="stat-val" id="sumBudget">—</p>
+          </div>
+        </div>
+        <div class="stat-card stat-blue">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info">
+            <p class="stat-label">Moy/jour</p>
+            <p class="stat-val" id="sumDailyAvg">0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Par catégorie -->
       <div class="card">
         <div class="card-header">
-          <h2>Budget mensuel</h2>
-          <span class="muted" id="budgetPercent">0%</span>
+          <h2>📊 Par catégorie</h2>
         </div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="budgetProgress"></div>
-        </div>
-        <p class="muted small" id="budgetText">Définis ton budget dans les Paramètres</p>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><h2>Par catégorie</h2></div>
         <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
         <div id="categoryLegend" class="legend"></div>
       </div>
 
+      <!-- Évolution -->
       <div class="card">
-        <div class="card-header"><h2>Évolution (6 derniers mois)</h2></div>
+        <div class="card-header"><h2>📈 Évolution 6 mois</h2></div>
         <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
       </div>
 
+      <!-- Dernières transactions -->
       <div class="card">
         <div class="card-header">
-          <h2>Dernières transactions</h2>
+          <h2>🕒 Dernières dépenses</h2>
           <button class="link-btn" data-nav="transactions">Tout voir</button>
         </div>
         <ul class="tx-list" id="recentTx"></ul>
       </div>
+
     </section>
 
-    <!-- TRANSACTIONS -->
+    <!-- ===== TRANSACTIONS ===== -->
     <section class="view" id="view-transactions">
       <div class="filters">
-        <input type="search" id="searchInput" placeholder="Rechercher…" />
+        <input type="search" id="searchInput" placeholder="🔍 Rechercher…" />
         <select id="filterCategory"><option value="">Toutes catégories</option></select>
-        <select id="filterType">
-          <option value="">Tous</option>
-          <option value="expense">Dépenses</option>
-          <option value="income">Revenus</option>
-        </select>
       </div>
       <div id="txGroups"></div>
-      <p class="empty" id="txEmpty" hidden>Aucune transaction ce mois-ci.</p>
+      <p class="empty" id="txEmpty" hidden>😶 Aucune dépense ce mois-ci.</p>
     </section>
 
-    <!-- STATS -->
+    <!-- ===== STATS ===== -->
     <section class="view" id="view-stats">
       <div class="card">
-        <div class="card-header"><h2>Top catégories du mois</h2></div>
+        <div class="card-header"><h2>🏆 Top catégories</h2></div>
         <ul class="ranking" id="topCategories"></ul>
       </div>
-      <div class="card">
-        <div class="card-header"><h2>Moyenne journalière</h2></div>
-        <p class="big-number" id="dailyAverage">0 FCFA</p>
+      <div class="card stats-highlight-card">
+        <p class="stats-highlight-label">💰 Moyenne journalière</p>
+        <p class="stats-highlight-num" id="dailyAverage">0 FCFA</p>
         <p class="muted small" id="dailyAverageText"></p>
       </div>
       <div class="card">
-        <div class="card-header"><h2>Comparaison mensuelle</h2></div>
+        <div class="card-header"><h2>📅 Comparaison mensuelle</h2></div>
         <div class="chart-wrap"><canvas id="compareChart"></canvas></div>
       </div>
-      <div class="card">
-        <div class="card-header"><h2>Total annuel</h2></div>
-        <p class="big-number" id="yearlyTotal">0 FCFA</p>
+      <div class="card stats-highlight-card stat-annual">
+        <p class="stats-highlight-label">🗓️ Total annuel des dépenses</p>
+        <p class="stats-highlight-num" id="yearlyTotal">0 FCFA</p>
         <p class="muted small" id="yearlyText"></p>
       </div>
     </section>
 
-    <!-- SETTINGS -->
+    <!-- ===== RÉGLAGES ===== -->
     <section class="view" id="view-settings">
 
-      <div class="card">
-        <div class="card-header"><h2>Budget mensuel (FCFA)</h2></div>
-        <input type="number" id="budgetInput" inputmode="numeric" min="0" step="1000" placeholder="Ex : 150000" />
-        <button class="primary-btn" id="saveBudget">Enregistrer</button>
+      <!-- Budget mensuel -->
+      <div class="card budget-setup-card">
+        <div class="budget-setup-icon">🎯</div>
+        <h2 class="budget-setup-title">Mon budget mensuel</h2>
+        <p class="budget-setup-sub">Définis combien tu peux dépenser ce mois</p>
+        <input type="number" id="budgetInput" inputmode="numeric" min="0" step="1000" placeholder="Ex : 150 000 FCFA" />
+        <button class="primary-btn" id="saveBudget">💾 Enregistrer le budget</button>
+        <p class="budget-setup-current" id="budgetCurrent"></p>
       </div>
 
+      <!-- Catégories -->
       <div class="card">
         <div class="card-header">
-          <h2>Catégories</h2>
+          <h2>🏷️ Catégories</h2>
           <button class="link-btn" id="addCategoryBtn">+ Ajouter</button>
         </div>
         <ul class="cat-list" id="categoryList"></ul>
       </div>
 
+      <!-- Thème -->
       <div class="card">
-        <div class="card-header"><h2>Thème</h2></div>
+        <div class="card-header"><h2>🎨 Thème</h2></div>
         <div class="theme-row">
-          <button class="theme-btn" data-theme="auto">Auto</button>
-          <button class="theme-btn" data-theme="light">Clair</button>
-          <button class="theme-btn" data-theme="dark">Sombre</button>
+          <button class="theme-btn" data-theme="auto">🌓 Auto</button>
+          <button class="theme-btn" data-theme="light">☀️ Clair</button>
+          <button class="theme-btn" data-theme="dark">🌙 Sombre</button>
         </div>
       </div>
 
-      <!-- SYNC CARD V2 -->
+      <!-- Sync -->
       <div class="card sync-card">
         <div class="card-header">
           <h2>🔄 Synchronisation</h2>
           <span class="sync-platform-badge" id="syncPlatformBadge">—</span>
         </div>
-
         <div class="sync-status-bar">
           <span class="sync-dot" id="syncDot"></span>
           <span class="sync-status-text" id="syncStatusText">Chargement…</span>
         </div>
-
         <div class="sync-device-row">
           <label class="sync-label">📱 Nom de cet appareil</label>
           <div class="sync-device-edit">
@@ -169,67 +181,50 @@
             <button class="sync-save-btn" id="saveDeviceName">✓</button>
           </div>
         </div>
-
         <div class="sync-family-row">
           <label class="sync-label">👨‍👩‍👧 Code famille <span class="sync-hint">(optionnel)</span></label>
           <div class="sync-device-edit">
             <input type="text" id="familyKeyInput" placeholder="Ex : ABCD-1234" maxlength="9" style="text-transform:uppercase;letter-spacing:2px" />
             <button class="sync-save-btn" id="saveFamilyKey">✓</button>
-            <button class="sync-gen-btn" id="genFamilyKey" title="Générer un code">🎲</button>
+            <button class="sync-gen-btn" id="genFamilyKey">🎲</button>
           </div>
-          <p class="muted small" style="margin-top:6px">Même code = fusion facile entre membres de la famille.</p>
+          <p class="muted small" style="margin-top:6px">Même code = fusion facile entre membres.</p>
         </div>
-
         <div class="sync-actions">
           <button class="sync-btn-save" id="cloudSave">
             <span class="sync-btn-icon">📤</span>
-            <span class="sync-btn-text">
-              <strong>Sauvegarder</strong>
-              <small id="syncSaveHint">vers le cloud</small>
-            </span>
+            <span class="sync-btn-text"><strong>Sauvegarder</strong><small id="syncSaveHint">vers le cloud</small></span>
           </button>
           <label class="sync-btn-restore">
             <span class="sync-btn-icon">📥</span>
-            <span class="sync-btn-text">
-              <strong>Restaurer</strong>
-              <small>depuis le cloud</small>
-            </span>
+            <span class="sync-btn-text"><strong>Restaurer</strong><small>depuis le cloud</small></span>
             <input type="file" id="cloudRestore" accept="application/json" hidden />
           </label>
         </div>
-
-        <button class="sync-guide-toggle" id="syncGuideToggle">
-          ℹ️ Comment sync sur <span id="syncPlatformName">cet appareil</span> ?
-        </button>
-        <div class="sync-guide" id="syncGuide" hidden>
-          <ol id="syncGuideSteps"></ol>
-        </div>
-
+        <button class="sync-guide-toggle" id="syncGuideToggle">ℹ️ Comment sync sur <span id="syncPlatformName">cet appareil</span> ?</button>
+        <div class="sync-guide" id="syncGuide" hidden><ol id="syncGuideSteps"></ol></div>
         <p class="sync-last-time" id="lastSyncText">Jamais synchronisé</p>
       </div>
 
+      <!-- Données -->
       <div class="card">
-        <div class="card-header"><h2>Données</h2></div>
-        <button class="secondary-btn" id="exportJson">Exporter (JSON)</button>
-        <button class="secondary-btn" id="exportCsv">Exporter (CSV)</button>
-        <label class="secondary-btn file-label">
-          Importer (JSON)
-          <input type="file" id="importJson" accept="application/json" hidden />
-        </label>
-        <button class="danger-btn" id="clearData">Tout effacer</button>
+        <div class="card-header"><h2>📁 Données</h2></div>
+        <button class="secondary-btn" id="exportJson">⬇️ Exporter (JSON)</button>
+        <button class="secondary-btn" id="exportCsv">⬇️ Exporter (CSV)</button>
+        <label class="secondary-btn file-label">⬆️ Importer (JSON)<input type="file" id="importJson" accept="application/json" hidden /></label>
+        <button class="danger-btn" id="clearData">🗑️ Tout effacer</button>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>À propos</h2></div>
-        <p class="muted small">Mes Dépenses — PWA locale. Toutes tes données restent sur ton appareil.</p>
-        <p class="muted small">Version 2.0 · Devise : FCFA</p>
+        <div class="card-header"><h2>ℹ️ À propos</h2></div>
+        <p class="muted small">Mes Dépenses — PWA v4. Toutes tes données restent sur ton appareil.</p>
+        <p class="muted small">Version 4.0 · Devise : FCFA 🇨🇮</p>
       </div>
 
     </section>
-
   </main>
 
-  <!-- ========== BOTTOM NAV ========== -->
+  <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-btn active" data-nav="dashboard">
       <span class="nav-icon">🏠</span><span class="nav-label">Accueil</span>
@@ -237,7 +232,7 @@
     <button class="nav-btn" data-nav="transactions">
       <span class="nav-icon">📋</span><span class="nav-label">Historique</span>
     </button>
-    <button class="nav-btn fab" id="openAdd" aria-label="Ajouter">
+    <button class="nav-btn fab" id="openAdd">
       <span class="plus">+</span>
     </button>
     <button class="nav-btn" data-nav="stats">
@@ -248,60 +243,63 @@
     </button>
   </nav>
 
-  <!-- MODAL: ADD/EDIT TRANSACTION -->
+  <!-- MODAL: AJOUTER DÉPENSE -->
   <div class="modal" id="txModal" hidden>
     <div class="modal-sheet">
+      <div class="modal-drag-handle"></div>
       <div class="modal-header">
-        <h2 id="txModalTitle">Nouvelle dépense</h2>
-        <button class="icon-btn" id="closeTxModal" aria-label="Fermer">✕</button>
-      </div>
-      <div class="type-toggle">
-        <button class="type-btn active" data-type="expense">− Dépense</button>
-        <button class="type-btn" data-type="income">+ Revenu</button>
+        <h2 id="txModalTitle">💸 Nouvelle dépense</h2>
+        <button class="icon-btn" id="closeTxModal">✕</button>
       </div>
       <form id="txForm" autocomplete="off">
         <input type="hidden" id="txId" />
-        <label>Montant (FCFA)</label>
-        <input type="number" id="txAmount" inputmode="numeric" min="0" step="1" required placeholder="0" />
-        <label>Catégorie</label>
-        <select id="txCategory" required></select>
-        <label>Date</label>
+
+        <!-- Montant grande saisie -->
+        <div class="amount-input-wrap">
+          <span class="amount-currency">FCFA</span>
+          <input type="number" id="txAmount" inputmode="numeric" min="0" step="1" required placeholder="0" class="amount-big-input" />
+        </div>
+
+        <!-- Catégories rapides -->
+        <label class="form-label">Catégorie</label>
+        <div id="catQuickPick" class="cat-quick-grid"></div>
+        <input type="hidden" id="txCategory" required />
+
+        <label class="form-label">Date</label>
         <input type="date" id="txDate" required />
-        <label>Description (optionnel)</label>
+
+        <label class="form-label">Description <span class="form-optional">(optionnel)</span></label>
         <input type="text" id="txDescription" placeholder="Ex : Marché de Treichville" maxlength="100" />
+
         <label class="check-row">
           <input type="checkbox" id="txRecurring" />
-          <span>Transaction récurrente chaque mois</span>
+          <span>🔁 Se répète chaque mois</span>
         </label>
+
         <div class="modal-actions">
           <button type="button" class="danger-btn" id="deleteTx" hidden>Supprimer</button>
-          <button type="submit" class="primary-btn">Enregistrer</button>
+          <button type="submit" class="primary-btn">✅ Enregistrer</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: ADD/EDIT CATEGORY -->
+  <!-- MODAL: CATÉGORIE -->
   <div class="modal" id="catModal" hidden>
     <div class="modal-sheet">
+      <div class="modal-drag-handle"></div>
       <div class="modal-header">
         <h2 id="catModalTitle">Nouvelle catégorie</h2>
-        <button class="icon-btn" id="closeCatModal" aria-label="Fermer">✕</button>
+        <button class="icon-btn" id="closeCatModal">✕</button>
       </div>
       <form id="catForm">
         <input type="hidden" id="catId" />
-        <label>Nom</label>
+        <label class="form-label">Nom</label>
         <input type="text" id="catName" required maxlength="30" placeholder="Ex : Restaurant" />
-        <label>Emoji / icône</label>
+        <label class="form-label">Emoji</label>
         <input type="text" id="catIcon" maxlength="4" placeholder="🍽️" />
-        <label>Couleur</label>
-        <input type="color" id="catColor" value="#3b82f6" />
-        <label>Type</label>
-        <select id="catType">
-          <option value="expense">Dépense</option>
-          <option value="income">Revenu</option>
-          <option value="both">Les deux</option>
-        </select>
+        <label class="form-label">Couleur</label>
+        <input type="color" id="catColor" value="#c4532b" />
         <div class="modal-actions">
           <button type="button" class="danger-btn" id="deleteCat" hidden>Supprimer</button>
           <button type="submit" class="primary-btn">Enregistrer</button>
@@ -310,9 +308,10 @@
     </div>
   </div>
 
-  <!-- MODAL: SYNC -->
+  <!-- MODAL SYNC -->
   <div class="modal" id="syncModal" hidden>
     <div class="modal-sheet">
+      <div class="modal-drag-handle"></div>
       <div class="modal-header">
         <h2>🔄 Synchronisation</h2>
         <button class="icon-btn" id="closeSyncModal">✕</button>
@@ -322,7 +321,6 @@
     </div>
   </div>
 
-  <!-- TOAST -->
   <div id="toast" class="toast" hidden></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>

@@ -1,13 +1,13 @@
 {
   "name": "Mes Dépenses — FCFA",
   "short_name": "Mes Dépenses",
-  "description": "Gestionnaire de dépenses personnelles en FCFA.",
+  "description": "Gestionnaire de dépenses en FCFA",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#f5ede0",
+  "theme_color": "#c4532b",
   "lang": "fr",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
