@@ -627,3 +627,17 @@ input:focus,select:focus{border-color:var(--terracotta);box-shadow:0 0 0 3px rgb
   margin-bottom: 4px;
   line-height: 1.45;
 }
+
+/* ===== BUDGET MONTH BADGE ===== */
+.budget-month-badge {
+  display: inline-block;
+  background: var(--btn-grad);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 18px;
+  border-radius: 999px;
+  margin: 8px auto 16px;
+  letter-spacing: 0.3px;
+  box-shadow: var(--shadow-md);
+}

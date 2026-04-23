@@ -24,7 +24,7 @@ const defaultCategories = [
 let state = {
   transactions: [],
   categories:   [...defaultCategories],
-  settings:     { monthlyBudget: 0, theme: 'auto' },
+  settings:     { budgets: {}, theme: 'auto' }, // budgets = { '2026-04': 150000, ... }
 };
 
 let familyCode    = '';
@@ -51,6 +51,16 @@ const fmtMoney  = n => nf.format(Math.round(n||0)) + ' FCFA';
 const fmtShort  = n => { const v=Math.round(n||0); if(v>=1e6) return (v/1e6).toFixed(1).replace('.0','')+'M'; if(v>=1e3) return Math.round(v/1e3)+'k'; return String(v); };
 const escHtml   = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pickRandom = arr => arr[Math.floor(Math.random()*arr.length)];
+
+// Budget du mois — indépendant par mois
+function getBudget(ym) {
+  return state.settings.budgets?.[ym] || 0;
+}
+async function setBudget(ym, amount) {
+  if (!state.settings.budgets) state.settings.budgets = {};
+  state.settings.budgets[ym] = amount;
+  await saveSettings();
+}
 
 function ymKey(d) { const dt=d instanceof Date?d:new Date(d); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'); }
 function prettyMonth(ym) { const [y,m]=ym.split('-').map(Number); return new Date(y,m-1,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}); }
@@ -164,7 +174,13 @@ async function startSync() {
     doc(db,'families',familyCode,'meta','settings'),
     snap => {
       if(snap.exists()) {
-        state.settings = {...state.settings, ...snap.data()};
+        const data = snap.data();
+        // Migration : si ancien format monthlyBudget, convertir
+        if (data.monthlyBudget && !data.budgets) {
+          data.budgets = { [ymKey(new Date())]: data.monthlyBudget };
+          delete data.monthlyBudget;
+        }
+        state.settings = {...state.settings, ...data};
         applyTheme();
         refreshAll();
       }
@@ -484,7 +500,7 @@ function renderGreeting() {
   $('#greetingTime').textContent = g.emoji+' '+g.label;
   $('#greetingTitle').textContent = pickRandom(g.titles);
 
-  const txs=txOfMonth(currentMonth), exp=totalExpense(txs), budget=state.settings.monthlyBudget||0;
+  const txs=txOfMonth(currentMonth), exp=totalExpense(txs), budget=getBudget(currentMonth);
   const overAmount = budget ? Math.max(0, exp-budget) : 0;
   const ANECDOTES = getAnecdotes(exp, budget, overAmount);
 
@@ -517,7 +533,7 @@ function renderGreeting() {
 function renderDashboard() {
   renderGreeting();
   const txs=txOfMonth(currentMonth), exp=totalExpense(txs);
-  const budget=state.settings.monthlyBudget||0;
+  const budget=getBudget(currentMonth);
   const pct=budget?Math.min(100,(exp/budget)*100):0;
 
   $('#heroExpense').textContent=fmtMoney(exp);
@@ -655,13 +671,16 @@ function renderStats() {
 }
 
 function renderBudgetHistory(months, y, m) {
-  const budget=state.settings.monthlyBudget||0;
+  // Chaque mois a son propre budget
   const el=$('#budgetHistory');
   if(!el) return;
-  if(!budget) { el.innerHTML='<p class="muted small" style="text-align:center;padding:12px">Definis un budget dans les Reglages pour voir l\'historique</p>'; return; }
+  const hasAnyBudget = months.some(ym => getBudget(ym) > 0);
+  if(!hasAnyBudget) { el.innerHTML='<p class="muted small" style="text-align:center;padding:12px">Definis un budget mensuel pour voir l\'historique</p>'; return; }
 
   el.innerHTML=months.map(ym=>{
     const exp=totalExpense(txOfMonth(ym));
+    const budget=getBudget(ym);
+    if(!budget) return '<div class="budget-hist-row"><span class="budget-hist-month">'+(ym===currentMonth?'📍 ':'')+prettyMonth(ym).replace(/ \d{4}$/,'')+'</span><span class="muted small" style="flex:1;text-align:center">Pas de budget</span></div>';
     const over=exp-budget;
     const isOver=over>0;
     const pct=Math.min(100,(exp/budget)*100);
@@ -682,9 +701,15 @@ function renderBudgetHistory(months, y, m) {
 
 // ---- Settings ----
 function renderSettings() {
-  const budget=state.settings.monthlyBudget||0;
+  const budget=getBudget(currentMonth);
   $('#budgetInput').value=budget||'';
-  $('#budgetCurrent').textContent=budget?'💰 Budget actuel : '+fmtMoney(budget):'';
+  const monthLabel=capitalize(prettyMonth(currentMonth));
+  $('#budgetCurrent').textContent=budget?'💰 '+monthLabel+' : '+fmtMoney(budget):'';
+  // Badge mois
+  const badge=$('#budgetMonthBadge');
+  if(badge) badge.textContent=monthLabel;
+  const sub=$('#budgetSetupSub');
+  if(sub) sub.textContent='Budget pour '+monthLabel;
   $('#familyCodeDisplay').textContent=familyCode||'—';
 
   // Prenom
@@ -833,7 +858,7 @@ function exportJson() {
     _version: 'v10',
     transactions: state.transactions,
     categories: state.categories.filter(c => !c.locked), // Exporter seulement les catégories custom
-    settings: { monthlyBudget: state.settings.monthlyBudget },
+    settings: { budgets: state.settings.budgets || {} },
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
@@ -909,8 +934,13 @@ async function importJson(file) {
       }
 
       // Importer le budget si pas encore défini
-      if (data.settings?.monthlyBudget && !state.settings.monthlyBudget) {
-        state.settings.monthlyBudget = data.settings.monthlyBudget;
+      if (data.settings?.monthlyBudget && !getBudget(ymKey(new Date()))) {
+        // Migration : appliquer l'ancien budget au mois courant
+        await setBudget(ymKey(new Date()), data.settings.monthlyBudget).catch(()=>{});
+      } else if (data.settings?.budgets) {
+        // Nouveau format — fusionner les budgets
+        if (!state.settings.budgets) state.settings.budgets = {};
+        Object.assign(state.settings.budgets, data.settings.budgets);
         try { await saveSettings(); } catch(e) {}
       }
 
@@ -1001,13 +1031,15 @@ function bindEvents() {
   $('#searchInput').addEventListener('input',renderTransactions);
   $('#filterCategory').addEventListener('change',renderTransactions);
 
-  // Budget
+  // Budget — sauvegardé pour le mois affiché uniquement
   $('#saveBudget').addEventListener('click',async()=>{
     const v=parseFloat($('#budgetInput').value)||0;
-    state.settings.monthlyBudget=v;
     try {
-      await saveSettings();
-      toast(v?'✅ Budget de '+fmtMoney(v)+' enregistré !':'Budget supprimé');
+      await setBudget(currentMonth, v);
+      const monthLabel=capitalize(prettyMonth(currentMonth));
+      toast(v?'✅ Budget '+monthLabel+' : '+fmtMoney(v):'Budget supprimé pour ce mois');
+      renderSettings();
+      renderDashboard();
     } catch(err) { toast('❌ Erreur : '+err.message); }
   });
 
@@ -1042,7 +1074,7 @@ function bindEvents() {
     unsubscribers.forEach(u=>u());
     localStorage.removeItem(LOCAL_KEY);
     familyCode='';
-    state={transactions:[],categories:[...defaultCategories],settings:{monthlyBudget:0,theme:'auto'}};
+    state={transactions:[],categories:[...defaultCategories],settings:{budgets:{},theme:'auto'}};
     showLogin();
   });
 }

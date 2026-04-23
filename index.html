@@ -185,11 +185,13 @@
       <!-- Budget -->
         <div class="card budget-setup-card">
           <div class="budget-setup-icon">🎯</div>
-          <h2 class="budget-setup-title">Mon budget mensuel</h2>
-          <p class="budget-setup-sub">Définis combien vous pouvez dépenser ce mois</p>
+          <h2 class="budget-setup-title">Budget mensuel</h2>
+          <p class="budget-setup-sub" id="budgetSetupSub">Définis le budget pour ce mois</p>
+          <div class="budget-month-badge" id="budgetMonthBadge">—</div>
           <input type="number" id="budgetInput" inputmode="numeric" min="0" step="1000" placeholder="Ex : 150 000 FCFA" />
-          <button class="primary-btn" id="saveBudget">💾 Enregistrer le budget</button>
+          <button class="primary-btn" id="saveBudget">💾 Enregistrer ce budget</button>
           <p class="budget-setup-current" id="budgetCurrent"></p>
+          <p class="muted small" style="text-align:center;margin-top:8px">💡 Chaque mois peut avoir un budget différent — les mois passés ne sont jamais modifiés.</p>
         </div>
 
         <!-- Catégories -->
