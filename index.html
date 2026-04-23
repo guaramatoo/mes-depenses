@@ -311,7 +311,7 @@
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDtgoPLnmqnkM0FNPtZN6XvWWP7VLUGo3Y",
@@ -326,7 +326,7 @@
     const db = getFirestore(app);
 
     // Rendre Firebase accessible globalement
-    window.__firebase = { db, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc, updateDoc };
+    window.__firebase = { db, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc, getDocs, updateDoc };
 
     // Signaler que Firebase est prêt
     window.dispatchEvent(new Event('firebase-ready'));

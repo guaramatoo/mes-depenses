@@ -123,8 +123,13 @@ async function startSync() {
   unsubscribers.forEach(u=>u());
   unsubscribers=[];
 
-  const { onSnapshot, collection, doc } = window.__firebase;
+  const { onSnapshot, collection, doc, getDoc, setDoc } = window.__firebase;
   const db = getDB();
+
+  // === INITIALISATION : sauvegarder les catégories par défaut si absent ===
+  // On vérifie si la famille existe déjà dans Firebase
+  // Si non, on crée toutes les catégories par défaut automatiquement
+  await initDefaultCategories(db);
 
   // Écouter les transactions en temps réel
   const txUnsub = onSnapshot(
@@ -138,11 +143,16 @@ async function startSync() {
   );
 
   // Écouter les catégories en temps réel
+  // FUSION : toujours garder les défauts + ajouter celles de Firebase
   const catUnsub = onSnapshot(
     collection(db,'families',familyCode,'categories'),
     snap => {
-      const cats = snap.docs.map(d=>({id:d.id,...d.data()}));
-      state.categories = cats.length ? cats : [...defaultCategories];
+      const remoteCats = snap.docs.map(d=>({id:d.id,...d.data()}));
+      // Fusionner : les catégories Firebase remplacent les défauts si même ID
+      // Les défauts manquants sont toujours présents
+      const catMap = new Map(defaultCategories.map(c=>[c.id,c]));
+      remoteCats.forEach(c=>catMap.set(c.id,c));
+      state.categories = [...catMap.values()];
       delete $('#filterCategory')?.dataset?.ready;
       refreshAll();
     },
@@ -163,6 +173,27 @@ async function startSync() {
   );
 
   unsubscribers = [txUnsub, catUnsub, setUnsub];
+}
+
+// Initialiser les catégories par défaut dans Firebase si pas encore fait
+async function initDefaultCategories(db) {
+  const { collection, getDocs, setDoc, doc } = window.__firebase;
+  try {
+    const snap = await getDocs(collection(db,'families',familyCode,'categories'));
+    if(snap.empty) {
+      // Première connexion — sauvegarder toutes les catégories par défaut
+      console.log('Initialisation des catégories par défaut...');
+      await Promise.all(
+        defaultCategories.map(cat =>
+          setDoc(doc(db,'families',familyCode,'categories',cat.id), cat)
+        )
+      );
+      console.log('Catégories par défaut initialisées');
+    }
+  } catch(e) {
+    console.error('Erreur init catégories:', e);
+    // Pas bloquant — l'app continue quand même
+  }
 }
 
 function setSyncStatus(online) {
