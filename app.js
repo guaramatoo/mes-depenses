@@ -826,6 +826,108 @@ async function deleteCategory() {
   } catch(err) { toast('❌ Erreur : '+err.message); }
 }
 
+// ---- Export JSON ----
+function exportJson() {
+  const data = {
+    _exportedAt: new Date().toISOString(),
+    _version: 'v10',
+    transactions: state.transactions,
+    categories: state.categories.filter(c => !c.locked), // Exporter seulement les catégories custom
+    settings: { monthlyBudget: state.settings.monthlyBudget },
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mes-depenses-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+  toast('✅ Export JSON téléchargé');
+}
+
+// ---- Import JSON ----
+async function importJson(file) {
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const data = JSON.parse(reader.result);
+
+      // Validation basique
+      if (!data.transactions && !data.categories) {
+        toast('❌ Fichier invalide — aucune donnée trouvée');
+        return;
+      }
+
+      const txCount = (data.transactions || []).length;
+      const catCount = (data.categories || []).length;
+      const exportDate = data._exportedAt
+        ? new Date(data._exportedAt).toLocaleDateString('fr-FR', {day:'numeric',month:'short',year:'numeric'})
+        : 'date inconnue';
+
+      const msg = `Fichier du ${exportDate}\n` +
+        `• ${txCount} dépense${txCount>1?'s':''}\n` +
+        `• ${catCount} catégorie${catCount>1?'s':''} personnalisée${catCount>1?'s':''}\n\n` +
+        `Ces données seront AJOUTÉES à Firebase (rien ne sera supprimé).\nContinuer ?`;
+
+      if (!confirm(msg)) return;
+
+      let imported = 0;
+      let skipped = 0;
+
+      // Importer les transactions (fusionner — pas écraser)
+      if (data.transactions && data.transactions.length > 0) {
+        const existingIds = new Set(state.transactions.map(t => t.id));
+        const newTxs = data.transactions
+          .filter(t => t.amount && t.date) // Valider
+          .map(t => ({...t, type: 'expense'})); // S'assurer que c'est bien expense
+
+        for (const tx of newTxs) {
+          if (existingIds.has(tx.id)) {
+            skipped++;
+          } else {
+            try {
+              await saveTx(tx);
+              imported++;
+            } catch(e) {
+              console.error('Erreur import tx:', e);
+            }
+          }
+        }
+      }
+
+      // Importer les catégories custom (jamais écraser les défauts)
+      if (data.categories && data.categories.length > 0) {
+        const defaultIds = new Set(defaultCategories.map(c => c.id));
+        const customCats = data.categories.filter(c => !defaultIds.has(c.id));
+        for (const cat of customCats) {
+          try {
+            await saveCat({...cat, locked: false});
+          } catch(e) {
+            console.error('Erreur import cat:', e);
+          }
+        }
+      }
+
+      // Importer le budget si pas encore défini
+      if (data.settings?.monthlyBudget && !state.settings.monthlyBudget) {
+        state.settings.monthlyBudget = data.settings.monthlyBudget;
+        try { await saveSettings(); } catch(e) {}
+      }
+
+      const msg2 = imported > 0
+        ? `✅ Import terminé !\n${imported} dépense${imported>1?'s':''} ajoutée${imported>1?'s':''}${skipped>0?' ('+skipped+' déjà présentes)':''}`
+        : `ℹ️ Toutes les dépenses étaient déjà présentes`;
+      toast(imported > 0 ? `✅ ${imported} dépense${imported>1?'s':''} importée${imported>1?'s':''}` : 'ℹ️ Déjà à jour');
+      alert(msg2);
+
+    } catch(e) {
+      toast('❌ Fichier JSON invalide');
+      console.error('Import error:', e);
+    }
+  };
+  reader.readAsText(file);
+}
+
 // ---- Export CSV ----
 function exportCsv() {
   const rows=[['Date','Catégorie','Description','Montant (FCFA)']];
@@ -918,7 +1020,9 @@ function bindEvents() {
   }));
 
   // Données
+  $('#exportJson').addEventListener('click',exportJson);
   $('#exportCsv').addEventListener('click',exportCsv);
+  $('#importJson').addEventListener('change',e=>{if(e.target.files[0]){importJson(e.target.files[0]);e.target.value='';} });
   $('#clearData').addEventListener('click',clearAllData);
 
   // Code famille
