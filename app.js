@@ -302,6 +302,50 @@ function setPrenom(p) { localStorage.setItem(PRENOM_KEY, p.trim()); }
 function isHassan() { return getPrenom().toLowerCase().includes('hassan'); }
 function isAurore() { return getPrenom().toLowerCase().includes('aurore'); }
 
+// ---- Système anti-répétition ----
+const QUEUE_KEY = 'mes_depenses_anec_queue';
+const QUEUE_IDX_KEY = 'mes_depenses_anec_idx';
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickNoRepeat(pool, poolKey) {
+  const key = QUEUE_KEY + '_' + poolKey;
+  const idxKey = QUEUE_IDX_KEY + '_' + poolKey;
+  let queue = [];
+  let idx = 0;
+  try {
+    queue = JSON.parse(localStorage.getItem(key) || '[]');
+    idx = parseInt(localStorage.getItem(idxKey) || '0');
+  } catch(e) {}
+
+  // Si queue vide ou épuisée, recréer
+  if (!queue.length || idx >= queue.length) {
+    queue = shuffleArray(pool.map((_, i) => i));
+    idx = 0;
+    // S'assurer que le 1er élément de la nouvelle queue ≠ dernier affiché
+    const lastIdx = queue[queue.length - 1];
+    if (queue[0] === lastIdx && queue.length > 1) {
+      [queue[0], queue[1]] = [queue[1], queue[0]];
+    }
+  }
+
+  const chosen = pool[queue[idx]];
+  idx++;
+  try {
+    localStorage.setItem(key, JSON.stringify(queue));
+    localStorage.setItem(idxKey, String(idx));
+  } catch(e) {}
+  return chosen;
+}
+
+
 // ---- Greetings personnalisés ----
 function getGreetings() {
   const prenom = getPrenom();
@@ -312,23 +356,40 @@ function getGreetings() {
     morning: {
       emoji: '☀️', label: 'BON MATIN',
       titles: h ? [
-        'Wêh '+n+' ! C\'est parti mon gars 💪',
-        'Eh djo '+n+', nouvelle journée pour tout noter !',
-        n+' le patron est là ! On gère aujourd\'hui',
-        'Allez '+n+' ! Nouvelle journée, nouveau départ',
+        'Wêh ' + n + ' ! C\'est parti mon gars 💪',
+        'Eh djo ' + n + ', nouvelle journée pour tout noter !',
+        n + ' le patron est là ! On gère aujourd\'hui',
+        'Allez ' + n + ' ! Nouvelle journée, nouveau départ',
+        'Bonjour ' + n + ' ! L\'argent ne dort pas, toi non plus',
+        'Djo ' + n + ' ! Le soleil est levé, note tes dépenses',
+        n + ', aujourd\'hui on gère propre comme Plateau 🏙️',
+        'Eh ' + n + ' ! Abidjan t\'attend, commence la journée',
+        'Levé tôt ' + n + ' ! Les gros sous arrivent 💰',
+        'Gbê ' + n + ' ! Une nouvelle page commence aujourd\'hui',
       ] : a ? [
-        'Bonjour '+n+' ! Belle journée à toi 🌸',
-        n+' chérie, on commence bien cette journée ✨',
-        'C\'est toi la boss aujourd\'hui '+n+' 👑',
-        'Bonjour '+n+' ! Prête à noter les dépenses ?',
+        'Bonjour ' + n + ' ! Belle journée à toi 🌸',
+        n + ' chérie, on commence bien cette journée ✨',
+        'C\'est toi la boss aujourd\'hui ' + n + ' 👑',
+        'Bonjour ' + n + ' ! Prête à noter les dépenses ?',
+        n + ', le matin est beau comme la lagune 🌊',
+        'Belle matinée ' + n + ' ! On démarre en beauté 🌸',
+        n + ' chérie, nouvelle journée = nouvelles opportunités ✨',
+        'Coucou ' + n + ' ! Prête à maîtriser le budget du jour ?',
+        n + ', chaque matin est un cadeau — gère-le bien 🎁',
+        'Bonjour ' + n + ' ! La famille compte sur toi 👨‍👩‍👧',
       ] : n ? [
-        'Bonjour '+n+' ! Belle journée 🌅',
-        n+', c\'est parti pour une nouvelle journée !',
-        'Eh '+n+' ! Nouveau jour, on note tout',
+        'Bonjour ' + n + ' ! Belle journée 🌅',
+        n + ', c\'est parti pour une nouvelle journée !',
+        'Eh ' + n + ' ! Nouveau jour, on note tout',
+        'Bonne journée ' + n + ' ! L\'argent bien géré, c\'est la liberté',
+        n + ', commence fort ce matin 💪',
       ] : [
         'Wêh ! C\'est parti 💪',
         'Nouvelle journée, on gère l\'argent !',
         'Bonjour ! Prêt à tout noter ?',
+        'Le matin est frais, l\'esprit est clair — note tout !',
+        'Nouvelle journée, nouvelles opportunités 🌅',
+        'Abidjan se réveille, toi aussi ! C\'est parti 🌴',
       ],
     },
     noon: {
@@ -337,11 +398,24 @@ function getGreetings() {
         'Hassan, c\'est l\'heure de manger ! 🍽️',
         'Pause méritée djo ! Bon appétit',
         'Midi à Abidjan ! Tu tiens le rythme Hassan',
+        n + ', attieké-poisson ou garba aujourd\'hui ? 😄',
+        'Eh djo ' + n + ' ! Pause méridienne bien méritée',
+        'Midi ' + n + ' ! Tu gères ce matin, continue cet après-midi',
       ] : a ? [
         'Aurore, bon appétit ma chérie ! 🌸',
         'Pause bien méritée Aurore ✨',
         'Midi ! Tu tiens bien le rythme Aurore',
-      ] : ['Bon appétit ! 🍽️','Pause bien méritée','Midi à Abidjan 🌴'],
+        n + ', petite pause bien méritée 🌸',
+        'Midi ' + n + ' ! La journée est à moitié gagnée ✨',
+        n + ' chérie, mange bien et reprends de plus belle !',
+      ] : [
+        'Bon appétit ! 🍽️',
+        'Pause bien méritée',
+        'Midi à Abidjan 🌴',
+        'Mi-journée, mi-chemin ! Continue comme ça',
+        'Pause méridienne — tu reviens plus fort après',
+        'Midi au soleil 🌤️ La journée avance bien',
+      ],
     },
     afternoon: {
       emoji: '🌞', label: 'APRÈS-MIDI',
@@ -349,11 +423,24 @@ function getGreetings() {
         'La journée avance Hassan, continue !',
         'Eh djo, tu gères bien aujourd\'hui !',
         'Hassan reste focus ! On est bons',
+        n + ', l\'après-midi à Abidjan, ça bouge ! 🏙️',
+        'Djo ' + n + ', plus que quelques heures — tiens le cap',
+        n + ' est en mode gestion, j\'aime ça 💪',
       ] : a ? [
         'La journée avance bien Aurore ✨',
         'Continue comme ça Aurore, tu gères !',
         'Aurore est en feu aujourd\'hui 🌸',
-      ] : ['La journée avance, reste focus !','Continue comme ça 💪','Tu gères bien !'],
+        n + ', l\'après-midi est à toi ✨',
+        'Bien joué ce matin ' + n + ' ! Finis en beauté',
+        n + ' sur sa lancée — rien ne peut l\'arrêter 👑',
+      ] : [
+        'La journée avance, reste focus !',
+        'Continue comme ça 💪',
+        'Tu gères bien !',
+        'Après-midi productive — on tient le cap',
+        'Plus que quelques heures, reste concentré',
+        'La lagune attend, finis ta journée en beauté 🌊',
+      ],
     },
     evening: {
       emoji: '🌅', label: 'BONSOIR',
@@ -361,11 +448,27 @@ function getGreetings() {
         'Bonsoir Hassan ! Belle soirée 🌴',
         'La journée est finie djo, détends-toi',
         'Hassan a bossé aujourd\'hui ! Repos mérité',
+        n + ', le coucher de soleil sur la lagune... 🌅',
+        'Eh djo ' + n + ' ! La soirée t\'appartient',
+        n + ', belle journée ! Tu mérites de souffler',
+        'Bonsoir ' + n + ' ! Révision des dépenses du jour ?',
       ] : a ? [
         'Bonsoir Aurore ! Belle soirée 🌸',
         'La journée est finie Aurore, détends-toi ✨',
         'Aurore a assuré aujourd\'hui ! Repose-toi',
-      ] : ['Bonsoir ! Belle soirée 🌴','Le soleil se couche, détends-toi','Fin de journée, beau travail !'],
+        n + ' chérie, belle soirée à toi 🌸',
+        'Bonsoir ' + n + ' ! Tu as bien géré aujourd\'hui ✨',
+        n + ', le soir est doux — profites-en',
+        'Belle soirée ' + n + ' ! La famille est bien gardée 👨‍👩‍👧',
+      ] : [
+        'Bonsoir ! Belle soirée 🌴',
+        'Le soleil se couche, détends-toi',
+        'Fin de journée, beau travail !',
+        'Soirée méritée ! Tu as bien géré',
+        'Le soleil se couche sur Abidjan 🌅',
+        'Bonsoir ! Petit bilan de la journée ?',
+        'La journée s\'achève bien 🌟',
+      ],
     },
     night: {
       emoji: '🌙', label: 'BONNE NUIT',
@@ -373,117 +476,276 @@ function getGreetings() {
         'Dors bien Hassan 😴',
         'La nuit porte conseil djo !',
         'Hassan, dernier coup d\'œil avant de dormir ?',
+        n + ', demain on repart de plus belle 💪',
+        'Bonne nuit ' + n + ' ! La famille est bien protégée',
+        n + ' djo, repose-toi bien — demain ça travaille !',
+        'La nuit est calme ' + n + ' — dors tranquille 🌙',
       ] : a ? [
         'Bonne nuit Aurore 🌸',
         'Dors bien Aurore, demain sera beau ✨',
         'Aurore, un dernier coup d\'œil ?',
-      ] : ['Bonne nuit 😴','La nuit porte conseil','Dors bien, demain sera meilleur'],
+        n + ' chérie, bonne nuit — tu as bien géré 🌸',
+        'Dors bien ' + n + ' ! Demain de nouvelles opportunités',
+        n + ', la nuit est douce comme ton sourire 🌙✨',
+        'Bonne nuit ' + n + ' ! La famille est entre de bonnes mains',
+      ] : [
+        'Bonne nuit 😴',
+        'La nuit porte conseil',
+        'Dors bien, demain sera meilleur',
+        'Nuit étoilée sur Abidjan 🌙',
+        'Repose-toi bien — demain on repart fort',
+        'Bonne nuit ! Ton budget te remercie 💤',
+        'Ferme les yeux, tout est bien géré 🌙',
+      ],
     },
   };
 }
 
-// ---- Anecdotes personnalisées ----
-function getAnecdotes(exp, budget, overAmount) {
+// ---- Anecdotes personnalisées (anti-répétition) ----
+function getAnecdotePools() {
   const prenom = getPrenom();
   const n = prenom ? prenom.split(' ')[0] : '';
   const h = isHassan(), a = isAurore();
-  const expStr = fmtMoney(overAmount||0);
 
   return {
     empty: h ? [
-      'Allez '+n+', rentre ta première dépense là !',
-      'Eh djo '+n+' ! On commence à noter aujourd\'hui',
-      'C\'est parti '+n+' ! Note tout ce que tu dépenses',
+      'Allez ' + n + ', rentre ta première dépense là !',
+      'Eh djo ' + n + ' ! On commence à noter aujourd\'hui',
+      'C\'est parti ' + n + ' ! Note tout ce que tu dépenses',
+      n + ', zéro dépense notée — on commence quand ?',
+      'Djo ' + n + ' ! L\'argent qui sort sans être noté, c\'est l\'argent perdu',
+      n + ', premier pas vers la liberté financière — ajoute ta première dépense',
+      'Eh ' + n + ' ! Même 100 FCFA ça compte, note tout',
+      n + ' le patron ! On commence le suivi aujourd\'hui ?',
+      'Wêh ' + n + ' ! Vide pour l\'instant — remplis ça mon ami',
+      n + ', une dépense notée = un pas vers la maîtrise totale 💪',
     ] : a ? [
       'Aurore, commence par ajouter ta première dépense 🌸',
-      n+' chérie, on est prêtes ! Ajoute ta première dépense',
-      'C\'est parti '+n+' ! Note tes dépenses ici',
+      n + ' chérie, on est prêtes ! Ajoute ta première dépense',
+      'C\'est parti ' + n + ' ! Note tes dépenses ici',
+      n + ', chaque centime compté, c\'est la liberté 🌸',
+      'Lance-toi ' + n + ' ! Une petite dépense pour commencer ✨',
+      n + ' chérie, ton budget t\'attend — première entrée ?',
+      'Rien encore ' + n + ' — on commence quand tu veux 🌸',
+      n + ', note même le petit café du matin ☕ Ça compte !',
+      'Premier pas ' + n + ' ! Ajoute ce que tu as dépensé aujourd\'hui',
+      n + ', la gestion parfaite commence par la première note ✨',
     ] : [
       'Commence par ajouter ta première dépense 👇',
       'Le plus dur c\'est de commencer, allez !',
       'Note ta première dépense pour démarrer 💪',
+      'Vide pour l\'instant — remplis ça !',
+      'Premier pas vers la maîtrise de ton argent',
+      'Même 100 FCFA ça compte — note tout !',
+      '"Le voyage de mille lieues commence par un pas" 🌍',
+      'L\'argent non suivi est l\'argent perdu',
+      'Un clic pour ajouter, une vie pour bénéficier 📲',
+      'Commence petit, vois grand 🌱',
     ],
 
     great: h ? [
-      'Wêh '+n+' ! Tu gères ton argent comme un vrai patron 👑',
-      'C\'est toi le chef ici '+n+' ! Le compte sourit',
-      'Gbê ! '+n+' a géré ça proprement ce mois',
-      'Trop fort '+n+' ! Le budget il respire bien 🌿',
+      'Wêh ' + n + ' ! Tu gères ton argent comme un vrai patron 👑',
+      'C\'est toi le chef ici ' + n + ' ! Le compte sourit',
+      'Gbê ! ' + n + ' a géré ça proprement ce mois',
+      'Trop fort ' + n + ' ! Le budget il respire bien 🌿',
       'Hassan et Aurore gèrent ! Le compte est propre 🎉',
+      n + ' djo ! Tu as dompté l\'argent ce mois 🔥',
+      'Eh ' + n + ' ! Les chiffres sont beaux comme la lagune',
+      n + ' est en mode économies — respect mon frère 🫡',
+      'Wêh ! ' + n + ' gère comme les grands hommes d\'Abidjan',
+      '"L\'homme sage dépense moins qu\'il ne gagne" — et toi tu l\'es',
+      n + ', le compte est propre comme le Plateau un dimanche matin',
+      'Djo ! ' + n + ' maîtrise son argent mieux qu\'un banquier 💼',
+      'La famille Hassan-Aurore est solide ce mois ! 💪',
+      n + ', félicitations — le budget te dit merci 🎊',
+      'Tu gardes la tête froide ' + n + ' ! Ça se voit sur le compte',
     ] : a ? [
-      'Bravo '+n+' ! Tu gères le budget comme une pro 👑',
-      n+' a tout maîtrisé ce mois, chapeau ! 🌸',
-      'Wêh '+n+' ! Les finances de la famille sourient 🎉',
+      'Bravo ' + n + ' ! Tu gères le budget comme une pro 👑',
+      n + ' a tout maîtrisé ce mois, chapeau ! 🌸',
+      'Wêh ' + n + ' ! Les finances de la famille sourient 🎉',
       'Hassan et Aurore gèrent ! Belle équipe 💪',
-      'Trop bien '+n+' ! Le budget respire ce mois ✨',
+      'Trop bien ' + n + ' ! Le budget respire ce mois ✨',
+      n + ' chérie, tu es la reine du budget ce mois 👑🌸',
+      'Magnifique ' + n + ' ! L\'argent est bien gardé entre tes mains',
+      n + ', les chiffres sont aussi beaux que toi ce mois ✨',
+      '"Une femme qui gère bien son foyer bâtit une nation" 🌍',
+      n + ', le compte sourit — et nous aussi 😊',
+      'La famille est entre de bonnes mains avec toi ' + n + ' 🌸',
+      n + ' est imbattable sur le budget ce mois ! 🏆',
+      'Chapeau ' + n + ' ! Même les banques peuvent apprendre de toi',
+      n + ' chérie, tu rayonnes — et ton compte aussi ✨',
+      'Wêh ' + n + ' ! La gestionnaire de la famille a encore frappé fort',
     ] : [
       'Wêh ! Tu gères comme un vrai patron 👑',
       'La famille gère ! Le compte est propre 🎉',
       '"Petit à petit, l\'oiseau fait son nid" 🐦',
       'Trop fort ! Le budget respire bien ce mois 🌿',
+      'L\'argent est bien gardé — félicitations 🏆',
+      'Budget maîtrisé = esprit tranquille 🧘',
+      '"Qui économise aujourd\'hui mange demain" 🌾',
+      'Les chiffres sont beaux — continue comme ça !',
+      'Gestionnaire de l\'année ! Le compte le confirme 📊',
+      'Abidjan-gestion : niveau expert atteint 🔥',
+      'Le budget respire, la famille aussi 🌿',
+      'Bien joué ! La liberté financière se construit ainsi',
     ],
 
     good: h ? [
-      'Pas mal '+n+' ! On tient le cap ce mois',
+      'Pas mal ' + n + ' ! On tient le cap ce mois',
       'Continue comme ça djo, ça va bien',
-      n+', le mois se passe bien, garde le rythme',
+      n + ', le mois se passe bien, garde le rythme',
+      'Djo ' + n + ' ! Tu es dans la bonne zone, reste-y',
+      n + ', mi-chemin et les chiffres sont bons — continue',
+      'Eh ' + n + ' ! Solide comme d\'habitude',
+      n + ' tient la barque — la famille est stable 🚢',
+      'Correct ' + n + ' ! On vise encore mieux le mois prochain',
+      n + ' gère — pas parfait mais on avance 👍',
+      'Bon rythme djo ! ' + n + ' est dans le tempo',
     ] : a ? [
-      'Bien joué '+n+' ! On tient le cap ce mois ✨',
-      'Continue comme ça '+n+', tu avances bien 🌸',
-      n+', le mois se passe bien !',
+      'Bien joué ' + n + ' ! On tient le cap ce mois ✨',
+      'Continue comme ça ' + n + ', tu avances bien 🌸',
+      n + ', le mois se passe bien !',
+      n + ' chérie, tu es dans la bonne direction ✨',
+      'Bel équilibre ' + n + ' ! Continue sur cette lancée 🌸',
+      n + ', les chiffres sont sages comme toi 😊',
+      'On est sur la bonne voie ' + n + ' — ensemble on gère 💪',
+      n + ' chérie, c\'est propre — visons encore mieux',
+      'Bien ' + n + ' ! Le mois avance dans le bon sens ✨',
+      n + ', gestionnaire sérieuse — ça se confirme 🌸',
     ] : [
       'Pas mal ! On tient le cap ce mois',
       'Continue comme ça, tu avances bien',
       'Le mois se passe bien, garde le rythme',
+      'Dans la bonne direction — continue',
+      'Bonne gestion ! Le compte apprécie',
+      'Mi-chemin, mi-victoire — reste focus',
+      'Solide ! Les chiffres parlent d\'eux-mêmes',
+      '"La régularité fait la victoire" 🏆',
+      'Bon équilibre — visons encore mieux',
+      'Dans le vert ! Continue sur cette lancée',
     ],
 
     warning: h ? [
-      'Doux-doux '+n+' hein ! Le budget il part vite là 🌡️',
-      'Eh djo '+n+' ! Tu approches la limite, calme-toi',
-      n+' mon ami, fais attention, l\'argent fuit 👀',
-      'Ralentis un peu '+n+', sinon fin du mois va faire mal',
+      'Doux-doux ' + n + ' hein ! Le budget il part vite là 🌡️',
+      'Eh djo ' + n + ' ! Tu approches la limite, calme-toi',
+      n + ' mon ami, fais attention, l\'argent fuit 👀',
+      'Ralentis un peu ' + n + ', sinon fin du mois va faire mal',
+      n + ' ! Le compte dit "attention" — écoute-le',
+      'Djo ' + n + ' ! Plus que 20% du budget — chaque FCFA compte',
+      n + ', on a un peu trop mangé l\'argent là — on ralentit',
+      'Eh ' + n + ' ! La ligne rouge approche — doucement',
+      n + ' djo, le mois n\'est pas fini mais le budget lui file',
+      '"Qui dépense vite se retrouve vite à sec" — proverbe pour ' + n,
+      n + ', petite alerte amicale — surveille les prochaines dépenses',
+      n + ' ! Abidjan est chère, le budget te le dit',
     ] : a ? [
-      'Attention '+n+' chérie ! Le budget fond vite 🌡️',
-      n+', on approche la limite, un peu de prudence ✨',
-      'Doucement '+n+' ! L\'argent part vite là 👀',
-      n+', ralentis un peu sur les dépenses ce mois',
+      'Attention ' + n + ' chérie ! Le budget fond vite 🌡️',
+      n + ', on approche la limite, un peu de prudence ✨',
+      'Doucement ' + n + ' ! L\'argent part vite là 👀',
+      n + ', ralentis un peu sur les dépenses ce mois',
+      n + ' chérie, petite alerte — il reste peu de budget 🌸',
+      n + ', on souffre un peu là — mais on peut encore sauver le mois',
+      'Eh ' + n + ' ! La limite approche, sois vigilante ✨',
+      n + ' chérie, quelques dépenses de moins et on est sauvées',
+      n + ', le budget te fait un clin d\'œil d\'avertissement 👀',
+      '"Mieux vaut prévenir que guérir" — pour le budget aussi ' + n,
+      n + ', ensemble on peut encore redresser ça 💪',
+      'Attention ' + n + ' ! Le compte a besoin de repos',
     ] : [
       'Doux-doux hein ! Le budget part vite 🌡️',
       'Attention, on approche la limite 👀',
       'Ralentis un peu, sinon fin du mois va faire mal',
+      'Alerte jaune ! Le budget dit attention',
+      '"Celui qui dépense sans compter pleure sans larmes" 💧',
+      'Encore quelques jours — chaque FCFA compte maintenant',
+      'La limite approche — soyons sages',
+      'Petit coup de frein conseillé 🚦',
+      'Le mois n\'est pas fini mais le budget file',
+      'Vigilance ! Le compte surveille chaque dépense',
+      '"L\'eau qui coule doucement creuse la roche" — ton budget aussi',
+      'On peut encore sauver le mois — focus 🎯',
     ],
 
     over: h ? [
-      'Aïe aïe aïe '+n+'... le budget est mort ce mois 😅',
-      'Eh djo '+n+' ! On a trop mangé l\'argent ce mois-ci',
-      n+' a frappé fort ! Dépassement de '+expStr,
-      'C\'est pas grave '+n+', le mois prochain on redresse 💪',
-      '"Qui va doucement va sûrement" — proverbe pour '+n+' 🐢',
+      'Aïe aïe aïe ' + n + '... le budget est mort ce mois 😅',
+      'Eh djo ' + n + ' ! On a trop mangé l\'argent ce mois-ci',
+      n + ' a frappé fort ! Mais le mois prochain on redresse',
+      'C\'est pas grave ' + n + ', le mois prochain on redresse 💪',
+      '"Qui va doucement va sûrement" — proverbe pour ' + n + ' 🐢',
+      n + ' djo, même les grands patrons dépassent parfois — on repart',
+      'Eh ' + n + ' ! Le compte a souffert mais on apprend',
+      n + ', Abidjan est chère parfois — le mois prochain on anticipe',
+      'Dépassé ' + n + ' ! Mais un vrai patron rebondit toujours 🔥',
+      'Le budget est KO ce mois ' + n + ' — mais ce n\'est qu\'un round 🥊',
+      n + ' djo, on a trop dépensé là — analyse et repart plus fort',
+      'Pas grave ' + n + ' ! Chaque mois est une nouvelle page',
+      n + ', même les meilleurs gestionnaires dépassent — l\'important c\'est la leçon',
+      'Ce mois c\'est rouge ' + n + ' — le prochain sera vert, j\'en suis sûr',
+      '"La chute n\'est pas un échec, rester à terre l\'est" 💪 ' + n,
     ] : a ? [
-      'Oups '+n+' ! On a un peu dépassé ce mois 😅',
-      n+', le budget pleure un peu là 🥲',
-      'Pas grave '+n+' chérie ! Dépassement de '+expStr+', on repart 💪',
-      n+', le mois prochain on va mieux gérer ensemble ✨',
-      'C\'est pas grave '+n+' ! On apprend de ça 🌸',
+      'Oups ' + n + ' ! On a un peu dépassé ce mois 😅',
+      n + ', le budget pleure un peu là 🥲',
+      'Pas grave ' + n + ' chérie ! On repart le mois prochain 💪',
+      n + ', le mois prochain on va mieux gérer ensemble ✨',
+      'C\'est pas grave ' + n + ' ! On apprend de ça 🌸',
+      n + ' chérie, le dépassement n\'est pas une défaite — c\'est une leçon',
+      'Oups ' + n + ' ! Mais une femme forte rebondit — tu le sais 👑',
+      n + ', ce mois on a dépassé mais ensemble on redresse ✨',
+      'Le budget a craqué ' + n + ' — pas toi ! On repart 💪',
+      n + ' chérie, même les meilleures ont des mois difficiles 🌸',
+      '"Après la pluie le beau temps" — ton prochain mois ' + n + ' ✨',
+      n + ', analyse les grosses dépenses et le prochain mois sera différent',
+      'Dépasser son budget une fois ' + n + ' c\'est humain — le répéter c\'est un choix',
+      n + ' chérie, on a appris quelque chose ce mois — ça vaut de l\'or',
+      'Courage ' + n + ' ! Le prochain mois t\'appartient 🌸',
     ] : [
-      'Aïe ! Le budget est dépassé de '+expStr+' 😅',
+      'Aïe ! Le budget est dépassé 😅',
       'Pas grave, le mois prochain sera meilleur 💪',
       '"Qui va doucement va sûrement" 🐢',
       'On a dépassé, mais on reste debout !',
+      'Dépassement = leçon précieuse pour le mois prochain',
+      '"La chute n\'est pas un échec, rester à terre l\'est"',
+      'Analyse les grosses dépenses — le mois prochain sera différent',
+      'Un mois dans le rouge, le prochain dans le vert 🟢',
+      '"Après la pluie le beau temps" — ton prochain mois',
+      'On a appris quelque chose ce mois — ça vaut de l\'or',
+      'Rebondir c\'est ce que font les grands 💪',
+      'Ce mois est fermé — ouvrons le prochain avec sagesse',
     ],
 
     nobudget: h ? [
-      n+', définis ton budget dans les Réglages 🎯',
-      'Eh djo '+n+' ! Sans budget c\'est difficile de gérer',
-      'Allez '+n+', mets un budget pour mieux suivre !',
+      n + ', définis ton budget dans les Réglages 🎯',
+      'Eh djo ' + n + ' ! Sans budget c\'est difficile de gérer',
+      'Allez ' + n + ', mets un budget pour mieux suivre !',
+      n + ' ! Un budget c\'est comme une carte — sans carte tu te perds',
+      'Djo ' + n + ', sans budget tu dépenses à l\'aveugle — va dans Réglages',
+      n + ', le budget c\'est ton garde-fou — active-le !',
+      'Eh ' + n + ' ! Même 50 000 FCFA comme budget c\'est mieux que rien',
+      n + ' djo, le vrai patron se fixe des limites — mets ton budget',
+      '"Qui ne planifie pas planifie d\'échouer" — ' + n + ' fixe ton budget',
+      n + ', un homme qui se respecte connaît ses limites — Réglages > Budget',
     ] : a ? [
-      n+' chérie, définis ton budget dans les Réglages 🎯',
-      n+', sans budget c\'est difficile ! Lance-toi ✨',
-      'Mets un budget '+n+', ça va tout changer 🌸',
+      n + ' chérie, définis ton budget dans les Réglages 🎯',
+      n + ', sans budget c\'est difficile ! Lance-toi ✨',
+      'Mets un budget ' + n + ', ça va tout changer 🌸',
+      n + ' chérie, le budget c\'est ta boussole — active-la !',
+      n + ', sans budget on navigue à vue — va dans Réglages',
+      'Un budget ' + n + ' c\'est la clé de la sérénité financière 🗝️',
+      n + ' chérie, même 100 000 FCFA comme budget — juste pour voir 🌸',
+      'La femme qui se fixe un budget est imbattable ' + n + ' !',
+      n + ', définir son budget c\'est s\'aimer — vas-y ✨',
+      '"Une maison sans budget est une maison sans direction" 🏠',
     ] : [
       'Définis ton budget dans les Réglages 🎯',
       'Sans budget, difficile de suivre !',
       'Un budget = la liberté financière 🔑',
+      'Sans limite, l\'argent disparaît sans raison',
+      '"Qui ne planifie pas planifie d\'échouer"',
+      'Va dans Réglages → Budget — ça change tout',
+      'Le budget c\'est ta boussole financière 🧭',
+      'Même un petit budget vaut mieux que rien',
+      'Définir son budget c\'est se respecter',
+      '"Connais ta limite avant de la franchir" 🚦',
     ],
   };
 }
@@ -498,21 +760,25 @@ function renderGreeting() {
   const GREETINGS = getGreetings();
   const g = GREETINGS[tod];
   $('#greetingTime').textContent = g.emoji+' '+g.label;
-  $('#greetingTitle').textContent = pickRandom(g.titles);
+  // Anti-répétition sur les titres aussi
+  $('#greetingTitle').textContent = pickNoRepeat(g.titles, 'greet_'+tod);
 
   const txs=txOfMonth(currentMonth), exp=totalExpense(txs), budget=getBudget(currentMonth);
   const overAmount = budget ? Math.max(0, exp-budget) : 0;
-  const ANECDOTES = getAnecdotes(exp, budget, overAmount);
+  const POOLS = getAnecdotePools();
 
+  // Déterminer la situation financière
+  let poolKey;
   let pool;
-  if(!txs.length)         pool = ANECDOTES.empty;
-  else if(!budget)        pool = ANECDOTES.nobudget;
-  else if(exp>budget)     pool = ANECDOTES.over;
-  else if(exp>budget*.8)  pool = ANECDOTES.warning;
-  else if(exp<budget*.5)  pool = ANECDOTES.great;
-  else                    pool = ANECDOTES.good;
+  if(!txs.length)         { pool = POOLS.empty;    poolKey = 'empty'; }
+  else if(!budget)        { pool = POOLS.nobudget;  poolKey = 'nobudget'; }
+  else if(exp>budget)     { pool = POOLS.over;      poolKey = 'over'; }
+  else if(exp>budget*.8)  { pool = POOLS.warning;   poolKey = 'warning'; }
+  else if(exp<budget*.5)  { pool = POOLS.great;     poolKey = 'great'; }
+  else                    { pool = POOLS.good;       poolKey = 'good'; }
 
-  $('#greetingAnecdote').textContent = pickRandom(pool);
+  // Anti-répétition sur les anecdotes
+  $('#greetingAnecdote').textContent = pickNoRepeat(pool, 'anec_'+poolKey);
 
   // Couleur hero selon état budget
   const hero = document.querySelector('.hero-card');
